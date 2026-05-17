@@ -1,0 +1,14 @@
+.valeon-status {
+	font-size: 12px;
+}
+
+.valeon-lint-file {
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: -8px;
+}
+
+.valeon-conflict-buttons button {
+	min-width: 120px;
+}
