@@ -1,4 +1,4 @@
-import matter from "gray-matter";
+import { parseYaml, stringifyYaml } from "obsidian";
 import type { ObsidianFrontmatter } from "../api/types";
 
 /*
@@ -6,7 +6,8 @@ import type { ObsidianFrontmatter } from "../api/types";
  * order convention (title, pubDate, updatedDate, excerpt, cover,
  * coverAlt, author, series, featured, tts, podcast, categories, tags,
  * canonical) AND keeps the plugin-managed `valeon:` block at the very
- * end.
+ * end. Uses Obsidian's built-in parseYaml / stringifyYaml — pure JS,
+ * works on both desktop and mobile.
  */
 
 export type ValeonMeta = {
@@ -53,9 +54,22 @@ const KEY_ORDER = [
 	"canonical",
 ];
 
+// Matches a YAML frontmatter block at the very start of the file:
+// "---\n" + YAML body + "\n---\n" (or trailing EOF after the close).
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+
 export function parseNote(raw: string): ParsedNote {
-	const parsed = matter(raw);
-	const data = (parsed.data ?? {}) as Record<string, unknown>;
+	const match = raw.match(FRONTMATTER_RE);
+	let data: Record<string, unknown> = {};
+	let body = raw;
+	if (match) {
+		const yamlText = match[1];
+		body = raw.slice(match[0].length);
+		const parsed = parseYaml(yamlText);
+		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			data = parsed as Record<string, unknown>;
+		}
+	}
 	const valeon = (data[VALEON_KEY] as ValeonMeta | undefined) ?? {};
 	const frontmatter: ObsidianFrontmatter = {
 		title: stringOr(data.title),
@@ -76,7 +90,7 @@ export function parseNote(raw: string): ParsedNote {
 	return {
 		frontmatter,
 		valeon,
-		body: parsed.content.trimStart(),
+		body: body.trimStart(),
 	};
 }
 
@@ -99,14 +113,15 @@ export function stringifyNote(
 	) {
 		ordered[VALEON_KEY] = cleanedValeon;
 	}
-	return matter.stringify(body, ordered);
+	const yaml = stringifyYaml(ordered);
+	const bodyOut = body.endsWith("\n") ? body : `${body}\n`;
+	return `---\n${yaml}---\n${bodyOut}`;
 }
 
 /**
- * Recursively strip `undefined` values from objects and arrays. js-yaml
- * (and therefore gray-matter) throws "unacceptable kind of an object
- * to dump" when it encounters an undefined value, so every object we
- * hand to `matter.stringify` must be cleaned first.
+ * Recursively strip `undefined` values from objects and arrays.
+ * stringifyYaml throws on undefined, so every object handed to it
+ * must be cleaned first.
  */
 function stripUndefined(value: unknown): unknown {
 	if (value === undefined) return undefined;
@@ -127,9 +142,9 @@ function stripUndefined(value: unknown): unknown {
 
 function stringOr(v: unknown): string | undefined {
 	if (typeof v === "string") return v.trim() ? v.trim() : undefined;
-	// js-yaml parses YAML timestamp scalars (`2025-01-01T00:00:00.000Z`)
-	// as Date objects rather than strings — coerce back to ISO so the
-	// downstream resolver and stringifier see a consistent shape.
+	// Defensive: if any YAML parser ever returns a Date object for a
+	// timestamp scalar, coerce back to ISO so downstream callers see a
+	// consistent shape.
 	if (v instanceof Date && !Number.isNaN(v.getTime())) {
 		return v.toISOString();
 	}
