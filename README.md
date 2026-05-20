@@ -83,6 +83,19 @@ ordering convention.
 
 ## Recommended companion: Linter plugin
 
+The Valeon plugin ships its own `Valeon: Lint post` command, but it does a
+different job than Victor Tao's Linter plugin — the two are complementary,
+not redundant:
+
+- **`Valeon: Lint post` validates** your frontmatter against the live server
+  schema — required keys, allowed category enums, slug pattern, excerpt
+  length, etc. It does not modify the file; it surfaces errors so publish
+  will succeed.
+- **Victor Tao's Linter formats** YAML and body — sorts keys, normalises
+  timestamps, escapes special characters, trims whitespace, enforces
+  heading and list style. It does not check whether your post is valid for
+  Valeon; that's the job of the validator above.
+
 Install Victor Tao's [Linter](https://github.com/platers/obsidian-linter)
 plugin (community plugin id `obsidian-linter`) and enable **Lint on save**.
 The rules below align with the frontmatter shape Valeon expects — set
