@@ -27,7 +27,7 @@ export class ValeonSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "Valeon publishing" });
+		new Setting(containerEl).setName("Valeon publishing").setHeading();
 
 		new Setting(containerEl)
 			.setName("API base URL")
