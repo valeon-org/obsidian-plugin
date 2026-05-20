@@ -1,13 +1,13 @@
-# Valeon — Obsidian publishing plugin
+# Valeon
 
 Publish and sync posts to the [Valeon](https://valeon.blog) author dashboard
-directly from your Obsidian vault. Works on desktop and mobile.
+from your vault. Works on desktop and mobile.
 
 Valeon is an invite-only writing platform. If you're not already an author,
 read [How to contribute](https://valeon.blog/how-to-contribute) and submit
 the application form linked there — accepted authors receive an invite
 email to set up a dashboard account, at which point you can publish either
-via the web dashboard or via this plugin from your Obsidian vault.
+via the web dashboard or with this plugin.
 
 ## Install
 
@@ -36,6 +36,7 @@ Open Obsidian → Settings → **Community plugins** → Browse → search for
 | `Valeon: Pull post (published)` | Pulls the live published body + frontmatter into the local note. Downloads any new media into `./assets/`. |
 | `Valeon: Pull post (draft buffer)` | Same, but prefers the draft buffer. |
 | `Valeon: Pull metadata` | Refreshes server-derived fields (`publishedAt`, `readingTime`, `wordCount`, `audioUrl`) in the `valeon:` block. Doesn't touch the body. |
+| `Valeon: Pull metadata (vault)` | Same as above, applied to every linked note in the vault. |
 | `Valeon: Sync vault` | Bulk pull for every linked note where the server's `updatedAt` is newer than the local `valeon.remoteUpdatedAt`. Conflict files get auto-backed up. Report goes to `_reports/`. |
 | `Valeon: Sync template from server` | Refreshes the schema cache and regenerates `_templates/post.frontmatter.template.md`. |
 | `Valeon: Reconcile vault (preview)` | Dry-run for backfill: matches local notes to remote posts and writes a report. |
@@ -192,5 +193,7 @@ bun run dev
 The text fields in the plugin's settings tab remain user-editable, so you
 can also override per-vault at runtime without rebuilding.
 
-Tagged releases (`v*.*.*`) build via `.github/workflows/release.yml` and
-attach `main.js`, `manifest.json`, and `styles.css` to the GitHub release.
+Tagged releases (semver, no `v` prefix per the Obsidian community-plugin
+convention) build via `.github/workflows/release.yml`, attach `main.js`,
+`manifest.json`, and `styles.css` to the GitHub release, and sign the
+artifacts via `actions/attest-build-provenance`.
