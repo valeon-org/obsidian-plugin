@@ -1,6 +1,9 @@
 import { type App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ValeonPlugin from "./main";
 
+declare const __VALEON_API_BASE_URL__: string;
+declare const __VALEON_DASHBOARD_BASE_URL__: string;
+
 export type ValeonSettings = {
 	apiBaseUrl: string;
 	dashboardBaseUrl: string;
@@ -8,8 +11,8 @@ export type ValeonSettings = {
 };
 
 export const DEFAULT_SETTINGS: ValeonSettings = {
-	apiBaseUrl: "",
-	dashboardBaseUrl: "https://valeon.io",
+	apiBaseUrl: __VALEON_API_BASE_URL__,
+	dashboardBaseUrl: __VALEON_DASHBOARD_BASE_URL__,
 	apiToken: "",
 };
 
