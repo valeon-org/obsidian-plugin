@@ -3,7 +3,7 @@
 	"name": "Valeon",
 	"version": "1.1.0",
 	"minAppVersion": "1.5.0",
-	"description": "Publish, edit, and sync Obsidian posts with the Valeon author dashboard. Lints frontmatter against the live dashboard schema, handles inline images and document assets, and reconciles existing posts with their remote counterparts.",
+	"description": "Publish, edit, and sync posts with the Valeon author dashboard. Lints frontmatter against the live dashboard schema, handles inline images and document assets, and reconciles existing posts with their remote counterparts.",
 	"author": "Sayed Hamid Fatimi",
 	"authorUrl": "https://valeon.blog",
 	"isDesktopOnly": false
