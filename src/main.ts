@@ -1,5 +1,8 @@
 import { Modal, Notice, Plugin, TFile } from "obsidian";
 import { ValeonApi } from "./api/client";
+
+declare const __VALEON_API_BASE_URL__: string;
+declare const __VALEON_DASHBOARD_BASE_URL__: string;
 import { type PersistedCache, SchemaCache } from "./api/schema-cache";
 import { runLint } from "./commands/lint-post";
 import { runNewPost } from "./commands/new-post";
@@ -84,14 +87,11 @@ export default class ValeonPlugin extends Plugin {
 	}
 
 	getApi(): ValeonApi {
-		if (!this.settings.apiBaseUrl) {
-			throw new Error("Set the API base URL in Valeon settings.");
-		}
 		if (!this.settings.apiToken) {
 			throw new Error("Set the API token in Valeon settings.");
 		}
 		return new ValeonApi({
-			baseUrl: this.settings.apiBaseUrl,
+			baseUrl: __VALEON_API_BASE_URL__,
 			token: this.settings.apiToken,
 		});
 	}
@@ -312,7 +312,7 @@ export default class ValeonPlugin extends Plugin {
 					runOpenInDashboard({
 						app: this.app,
 						file,
-						dashboardBaseUrl: this.settings.dashboardBaseUrl,
+						dashboardBaseUrl: __VALEON_DASHBOARD_BASE_URL__,
 					});
 				}
 				return true;

@@ -21,8 +21,44 @@ Open Obsidian → Settings → **Community plugins** → Browse → search for
    device (e.g. "iPhone Obsidian"). Copy the token — it is only shown once.
    You can revoke this token at any time from the same page.
 2. In Obsidian, open **Settings → Valeon publishing** and paste the value
-   into the **API token** field. The API and dashboard URLs are pre-filled.
+   into the **API token** field. That's the only setting authors configure —
+   the plugin always talks to the production Valeon backend.
 3. Click **Test connection** to verify.
+4. Run **`Valeon: Sync template from server`** once. This downloads the
+   current schema and writes `_templates/post.frontmatter.template.md` —
+   the cached template that `Valeon: New post` uses to populate the
+   frontmatter of new posts. Without this step, `Valeon: New post` will
+   prompt you to run it; doing it up front avoids the interruption. Re-run
+   the command any time the server's schema changes.
+
+## Folder structure
+
+Every post lives in its own dated folder at the top level of the vault:
+
+```text
+2026-05-21-my-first-post/
+├── post.md
+└── assets/
+    ├── cover.png
+    └── diagram.svg
+```
+
+The plugin only recognises this layout — `YYYY-MM-DD-{slug}/post.md`. Files
+that aren't named exactly `post.md`, or that live outside a dated folder, are
+ignored by sync, publish, lint, and reconcile.
+
+- **Create posts** with `Valeon: New post`. It prompts for a title, derives
+  the slug, creates the dated folder (`YYYY-MM-DD-{slug}/`), writes a fresh
+  `post.md` pre-populated with the frontmatter scaffold from the cached
+  schema template, and opens it for editing. You don't need to create the
+  folder or copy a template by hand — this command does both.
+- **Slug** is derived from the title and is part of the folder name — don't
+  rename the folder after publishing; the plugin uses it to match local
+  notes to their remote post.
+- **Place assets** (images, attachments, supporting documents) inside the
+  post's folder. The convention is a `./assets/` subfolder, but any path
+  inside the post folder works. See [Inline images & assets](#inline-images--assets)
+  below.
 
 ## Commands
 
@@ -149,21 +185,62 @@ The remaining list / heading / spacing rules are general markdown
 hygiene — pick whatever you prefer; they don't conflict with Valeon's
 requirements.
 
-## How assets work
+## Inline images & assets
 
-Local paths in your vault stay local. The plugin:
+Place every image, attachment, or other supporting file **inside the post's
+own folder** — files outside the folder are not uploaded. The convention is
+a `./assets/` subfolder, but any path inside the post folder works:
 
-- Reads each referenced image / document on push.
-- Computes sha256, dedupes against the local `valeon.media:` map.
-- Uploads new assets; writes the sha256 → storageId mapping back.
-- Rewrites the **transport copy** of the markdown to `/m/{storageId}`
-  — the original file is untouched.
+```markdown
+![architecture diagram](./assets/diagram.svg)
+![[assets/photo.jpg]]
+```
 
-Cross-post relative references (`../another-post/foo.png`) pass
-through unchanged.
+Both standard markdown and Obsidian wiki-link syntax are supported; the
+plugin normalises wiki-links to standard markdown during push.
 
-On pull, the inverse happens: `/m/{storageId}` references get
-downloaded into `./assets/` and rewritten back to relative paths.
+**Cover image:** declare it in frontmatter, pointing at a path inside the
+post folder. The cover is validated by lint before publish:
+
+```yaml
+cover: ./assets/cover.png
+coverAlt: A clay model of the new logo on a wooden desk.
+```
+
+**What the plugin does on publish:**
+
+- Reads each referenced asset, computes sha256, dedupes against the local
+  `valeon.media:` map.
+- Uploads new assets; writes the sha256 → storageId mapping back into
+  frontmatter.
+- Rewrites the **transport copy** of the markdown to `/m/{storageId}` — the
+  original file in your vault is untouched.
+
+**Supported formats:** any MIME type the server schema allows
+(`schema.media.allowedMimeTypes`). Lint reports anything unsupported before
+the upload attempt — run `Valeon: Lint post` if you want to check ahead of
+time.
+
+**On pull:** `/m/{storageId}` references get downloaded into `./assets/`
+and rewritten back to relative paths automatically.
+
+### Linking between notes
+
+The plugin treats all markdown and wiki-links uniformly when deciding what
+to upload:
+
+- **Links inside the same post folder** (`./assets/x.png`,
+  `./supplementary.md`) → uploaded as assets, rewritten to
+  `/m/{storageId}` in the transport copy.
+- **Links outside the post folder** (`../another-post/foo.md`,
+  `/some-other-post/img.png`) → passed through unchanged. These are
+  cross-post references; they resolve at runtime on the published blog,
+  not at upload time.
+- **External URLs** (`https://...`) → untouched.
+
+Wiki-links (`[[note]]`, `![[asset]]`) work the same way — they're
+converted to standard markdown during push and follow the same
+inside/outside-folder rule.
 
 ## Conflict handling
 
@@ -189,9 +266,6 @@ set -x VALEON_DASHBOARD_BASE_URL "https://author.dev.valeon.blog"
 bun install
 bun run dev
 ```
-
-The text fields in the plugin's settings tab remain user-editable, so you
-can also override per-vault at runtime without rebuilding.
 
 Tagged releases (semver, no `v` prefix per the Obsidian community-plugin
 convention) build via `.github/workflows/release.yml`, attach `main.js`,

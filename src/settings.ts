@@ -1,18 +1,11 @@
 import { type App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ValeonPlugin from "./main";
 
-declare const __VALEON_API_BASE_URL__: string;
-declare const __VALEON_DASHBOARD_BASE_URL__: string;
-
 export type ValeonSettings = {
-	apiBaseUrl: string;
-	dashboardBaseUrl: string;
 	apiToken: string;
 };
 
 export const DEFAULT_SETTINGS: ValeonSettings = {
-	apiBaseUrl: __VALEON_API_BASE_URL__,
-	dashboardBaseUrl: __VALEON_DASHBOARD_BASE_URL__,
 	apiToken: "",
 };
 
@@ -28,34 +21,6 @@ export class ValeonSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 		new Setting(containerEl).setName("Valeon publishing").setHeading();
-
-		new Setting(containerEl)
-			.setName("API base URL")
-			.setDesc(
-				"The Valeon blog Convex deployment site URL — e.g. https://my-deployment.convex.site",
-			)
-			.addText((t) =>
-				t
-					.setPlaceholder("https://...convex.site")
-					.setValue(this.plugin.settings.apiBaseUrl)
-					.onChange(async (v) => {
-						this.plugin.settings.apiBaseUrl = v.trim();
-						await this.plugin.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName("Dashboard base URL")
-			.setDesc("Used by 'Open in dashboard'.")
-			.addText((t) =>
-				t
-					.setPlaceholder("https://dashboard.valeon.io")
-					.setValue(this.plugin.settings.dashboardBaseUrl)
-					.onChange(async (v) => {
-						this.plugin.settings.dashboardBaseUrl = v.trim();
-						await this.plugin.saveSettings();
-					}),
-			);
 
 		new Setting(containerEl)
 			.setName("API token")
