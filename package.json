@@ -1,6 +1,6 @@
 {
 	"name": "@valeon-org/obsidian-plugin",
-	"version": "1.1.2",
+	"version": "1.1.3",
 	"private": true,
 	"description": "Obsidian plugin for publishing to the Valeon author dashboard.",
 	"main": "main.js",
