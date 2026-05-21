@@ -147,3 +147,22 @@ export type ApiError = {
 	errors?: Array<{ field: string; message: string }>;
 	warnings?: Array<{ field: string; message: string }>;
 };
+
+export type ResolveSlugResponse = { postId: string | null };
+
+export type ReferenceTarget = {
+	id: string;
+	slug: string;
+	status:
+		| "draft"
+		| "submitted"
+		| "changes_requested"
+		| "approved"
+		| "published"
+		| "archived";
+	publishedAt: number | null;
+};
+
+export type ResolveRefsResponse = {
+	targets: Array<ReferenceTarget | null>;
+};

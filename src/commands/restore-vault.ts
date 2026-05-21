@@ -2,6 +2,7 @@ import { type App, Notice } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import type { ListedPost, ObsidianFrontmatter } from "../api/types";
 import { rewriteForPull } from "../lib/body-rewriter";
+import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
 import { type ValeonMeta, stringifyNote } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
@@ -123,10 +124,14 @@ async function restoreOne(
 	}
 
 	// Rewrite the body so /m/{storageId} references point at the local
-	// files we just wrote.
-	const body = rewriteForPull(source.markdown, (storageId) => {
+	// files we just wrote, and `valeon:post:{id}` URIs become either
+	// folder-relative paths (for posts already in the vault, which
+	// during a full restore means earlier-iteration posts) or canonical
+	// blog URLs (for foreign or not-yet-restored posts).
+	const assetRewritten = rewriteForPull(source.markdown, (storageId) => {
 		return storageToFolderRelPath[storageId] ?? null;
 	});
+	const body = await rewriteCrossPostForPull(assetRewritten, app.vault, api);
 
 	// Set the top-level `cover` field from the cover's local path if
 	// we downloaded one.

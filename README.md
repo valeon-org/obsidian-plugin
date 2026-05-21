@@ -226,21 +226,46 @@ and rewritten back to relative paths automatically.
 
 ### Linking between notes
 
-The plugin treats all markdown and wiki-links uniformly when deciding what
-to upload:
+**Assets vs cross-post links.** Links inside the same post folder are
+treated as assets and uploaded; everything else falls under cross-post
+behaviour:
 
 - **Links inside the same post folder** (`./assets/x.png`,
   `./supplementary.md`) → uploaded as assets, rewritten to
   `/m/{storageId}` in the transport copy.
-- **Links outside the post folder** (`../another-post/foo.md`,
-  `/some-other-post/img.png`) → passed through unchanged. These are
-  cross-post references; they resolve at runtime on the published blog,
-  not at upload time.
-- **External URLs** (`https://...`) → untouched.
+- **Cross-post links** (see two forms below) → translated to a stable
+  `valeon:post:{convexId}` URI on push so the link survives folder
+  renames and slug changes.
+- **External URLs** (`https://example.com/...`) → untouched.
 
 Wiki-links (`[[note]]`, `![[asset]]`) work the same way — they're
 converted to standard markdown during push and follow the same
 inside/outside-folder rule.
+
+#### Cross-post link forms
+
+Two natural author-facing forms are supported. Both translate to the
+same `valeon:post:{id}` URI in the body that Convex stores; the blog
+render pipeline resolves that URI to `/YYYY/MM/DD/{slug}` at render
+time.
+
+| Form | When to use |
+|---|---|
+| `[text](../2026-04-15-other-post/post.md)` | Linking to one of **your own** posts. Obsidian's wiki-link autocomplete makes typing the folder name easy. |
+| `[text](https://valeon.blog/2026/04/15/other-post)` | Linking to **another author's** post (or your own via the canonical URL). Paste the URL straight from a browser tab. |
+
+**On pull**, the plugin reverses the translation:
+
+- Your own posts → folder-relative path (`../folder/post.md`) so
+  links remain clickable inside Obsidian.
+- Foreign published posts → canonical blog URL.
+- Foreign draft/archived posts → `valeon:post:{id}` URI left in
+  place; round-trips fine on next push, and resolves to a real URL
+  once the target publishes.
+
+**Lint catches unresolvable refs** (target not local, target hasn't
+been linked to Valeon yet, blog URL doesn't match a published post)
+and blocks publish until they're fixed.
 
 ## Conflict handling
 

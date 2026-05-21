@@ -7,6 +7,8 @@ import type {
 	MatchResponse,
 	ObsidianFrontmatter,
 	PostMutationResponse,
+	ResolveRefsResponse,
+	ResolveSlugResponse,
 	ServerSchema,
 	Taxonomy,
 	UploadUrlResponse,
@@ -120,6 +122,20 @@ export class ValeonApi {
 		return this.request<PostMutationResponse>(
 			"/api/obsidian/posts/update",
 			args,
+		);
+	}
+
+	resolveSlugToId(slug: string) {
+		return this.request<ResolveSlugResponse>(
+			"/api/obsidian/posts/resolve-slug",
+			{ slug },
+		);
+	}
+
+	resolveReferenceTargets(ids: string[]) {
+		return this.request<ResolveRefsResponse>(
+			"/api/obsidian/posts/resolve-refs",
+			{ ids },
 		);
 	}
 

@@ -3,6 +3,7 @@ import type { ValeonApi } from "../api/client";
 import type { FetchResponse } from "../api/types";
 import { rewriteForPull } from "../lib/body-rewriter";
 import { detectConflict } from "../lib/conflict";
+import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
 import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
@@ -158,8 +159,12 @@ async function applyPull(
 		if (ref.sha256) mediaMap[ref.sha256] = ref.storageId;
 	}
 
-	// Rewrite the markdown body's /m/{storageId} → ./assets/filename.
-	const localBody = rewriteForPull(source.markdown, (storageId) => {
+	// Rewrite the markdown body. Two passes — assets first
+	// (/m/{storageId} → ./assets/filename), then cross-post refs
+	// (valeon:post:{id} → ../folder/post.md or canonical URL).
+	// Passes operate on disjoint URL spaces; order doesn't matter
+	// for correctness.
+	const assetRewritten = rewriteForPull(source.markdown, (storageId) => {
 		const path = storageToFilename[storageId];
 		if (!path) return null;
 		if (path.startsWith(`${folderPath}/`)) {
@@ -167,6 +172,11 @@ async function applyPull(
 		}
 		return null;
 	});
+	const localBody = await rewriteCrossPostForPull(
+		assetRewritten,
+		app.vault,
+		api,
+	);
 
 	// Construct the new frontmatter. Server's frontmatter is canonical;
 	// preserve the local cover path if we had one (we don't store

@@ -116,7 +116,16 @@ export default class ValeonPlugin extends Plugin {
 				const file = this.activeMarkdownFile();
 				if (!file) return false;
 				if (!checking) {
-					runLint({ app: this.app, file, cache: this.cache });
+					// Try to attach the API client so lint can validate
+					// cross-post blog-URL refs. Falls back to vault-only
+					// lint if the token isn't configured yet.
+					let api: ReturnType<typeof this.getApi> | null = null;
+					try {
+						api = this.getApi();
+					} catch {
+						api = null;
+					}
+					runLint({ app: this.app, file, cache: this.cache, api });
 				}
 				return true;
 			},

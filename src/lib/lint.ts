@@ -1,7 +1,10 @@
-import type { Vault } from "obsidian";
+import type { TFile, Vault } from "obsidian";
+import type { ValeonApi } from "../api/client";
 import type { ObsidianFrontmatter, ServerSchema, Taxonomy } from "../api/types";
 import { resolveInsideFolder } from "./asset-resolver";
 import { collectLocalAssetPaths } from "./body-rewriter";
+import { collectCrossPostRefs } from "./cross-post-refs";
+import { parseNote } from "./frontmatter";
 
 /*
  * Lint a parsed note against the cached server schema + taxonomy.
@@ -26,12 +29,31 @@ export type LintInput = {
 	schema: ServerSchema;
 	taxonomy: Taxonomy;
 	vault: Vault;
+	// File being linted — used to resolve `../folder/post.md` style
+	// cross-post refs relative to the source. Optional so the lint-only
+	// command can pass null when the caller has no TFile context.
+	sourceFile?: TFile | null;
+	// Optional API client. When provided, lint validates cross-post
+	// blog-URL refs (`https://valeon.blog/...`) and any pre-existing
+	// `valeon:post:{id}` URIs in the local body by calling Convex.
+	// When omitted (e.g. offline lint), URL/URI checks are skipped but
+	// folder-path refs are still validated against the local vault.
+	api?: ValeonApi | null;
 };
 
 export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 	const issues: LintIssue[] = [];
-	const { frontmatter, body, schema, taxonomy, slug, folderPath, vault } =
-		input;
+	const {
+		frontmatter,
+		body,
+		schema,
+		taxonomy,
+		slug,
+		folderPath,
+		vault,
+		sourceFile,
+		api,
+	} = input;
 
 	// Required keys.
 	for (const key of schema.requiredKeys) {
@@ -164,6 +186,86 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 				severity: "error",
 				field: "asset",
 				message: `Asset "${path}" has unsupported MIME type "${mime}".`,
+			});
+		}
+	}
+
+	// Cross-post references in the body.
+	const crossRefs = collectCrossPostRefs(body);
+	const folderRefs = crossRefs.filter((r) => r.kind === "folder");
+	const urlRefs = crossRefs.filter((r) => r.kind === "url");
+	const uriRefs = crossRefs.filter((r) => r.kind === "uri");
+
+	for (const ref of folderRefs) {
+		if (ref.kind !== "folder") continue;
+		const grandparent = sourceFile?.parent?.parent?.path ?? "";
+		const targetPath = grandparent
+			? `${grandparent}/${ref.folderName}/post.md`
+			: `${ref.folderName}/post.md`;
+		const exists = await vault.adapter.exists(targetPath);
+		if (!exists) {
+			issues.push({
+				severity: "error",
+				field: "cross-post",
+				message: `Cross-post link "${ref.raw}" → no file at ${targetPath}.`,
+			});
+			continue;
+		}
+		const raw = await vault.adapter.read(targetPath);
+		const parsed = parseNote(raw);
+		if (!parsed.valeon.postId) {
+			issues.push({
+				severity: "error",
+				field: "cross-post",
+				message: `Cross-post link "${ref.raw}" → target post hasn't been linked to Valeon yet (no valeon.postId in frontmatter).`,
+			});
+		}
+	}
+
+	if (api && urlRefs.length > 0) {
+		for (const ref of urlRefs) {
+			if (ref.kind !== "url") continue;
+			try {
+				const r = await api.resolveSlugToId(ref.slug);
+				if (!r.postId) {
+					issues.push({
+						severity: "error",
+						field: "cross-post",
+						message: `Cross-post link "${ref.raw}" → no published post found at that URL.`,
+					});
+				}
+			} catch (err) {
+				issues.push({
+					severity: "warning",
+					field: "cross-post",
+					message: `Couldn't verify cross-post URL "${ref.raw}": ${err instanceof Error ? err.message : String(err)}`,
+				});
+			}
+		}
+	}
+
+	if (api && uriRefs.length > 0) {
+		try {
+			const ids = uriRefs
+				.filter(
+					(r): r is Extract<typeof r, { kind: "uri" }> => r.kind === "uri",
+				)
+				.map((r) => r.postId);
+			const r = await api.resolveReferenceTargets(ids);
+			for (let i = 0; i < ids.length; i++) {
+				if (!r.targets[i]) {
+					issues.push({
+						severity: "error",
+						field: "cross-post",
+						message: `Cross-post URI "valeon:post:${ids[i]}" → post not found on the server.`,
+					});
+				}
+			}
+		} catch (err) {
+			issues.push({
+				severity: "warning",
+				field: "cross-post",
+				message: `Couldn't verify cross-post URIs: ${err instanceof Error ? err.message : String(err)}`,
 			});
 		}
 	}

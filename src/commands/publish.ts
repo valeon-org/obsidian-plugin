@@ -3,6 +3,7 @@ import { ApiError_, type ValeonApi } from "../api/client";
 import type { SchemaCache } from "../api/schema-cache";
 import { resolveInsideFolder } from "../lib/asset-resolver";
 import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
+import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
 import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
 import { lintPost, mimeFromExt } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
@@ -57,6 +58,8 @@ export async function runPublish(args: {
 		schema: cache.schema,
 		taxonomy: cache.taxonomy,
 		vault: app.vault,
+		sourceFile: file,
+		api,
 	});
 	const errors = issues.filter((i) => i.severity === "error");
 	if (errors.length > 0) {
@@ -123,9 +126,17 @@ export async function runPublish(args: {
 		await ensureUploaded(path);
 	}
 
-	// Rewrite body.
-	const transportBody = rewriteForPush(
+	// Rewrite body. Two passes — cross-post refs first (folder paths
+	// and blog URLs → valeon:post:{id} URIs), then assets
+	// (/m/{storageId}). The passes operate on disjoint URL spaces.
+	const crossPostBody = await rewriteCrossPostForPush(
 		parsed.body,
+		file,
+		app.vault,
+		api,
+	);
+	const transportBody = rewriteForPush(
+		crossPostBody,
 		folderPath,
 		(resolvedVaultPath) => resolverIndex[resolvedVaultPath] ?? null,
 	);
