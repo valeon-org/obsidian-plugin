@@ -233,7 +233,7 @@ behaviour:
 - **Links inside the same post folder** (`./assets/x.png`,
   `./supplementary.md`) → uploaded as assets, rewritten to
   `/m/{storageId}` in the transport copy.
-- **Cross-post links** (see two forms below) → translated to a stable
+- **Cross-post links** (see below) → translated to a stable
   `valeon:post:{convexId}` URI on push so the link survives folder
   renames and slug changes.
 - **External URLs** (`https://example.com/...`) → untouched.
@@ -242,30 +242,80 @@ Wiki-links (`[[note]]`, `![[asset]]`) work the same way — they're
 converted to standard markdown during push and follow the same
 inside/outside-folder rule.
 
-#### Cross-post link forms
+### Cross-post references
 
-Two natural author-facing forms are supported. Both translate to the
-same `valeon:post:{id}` URI in the body that Convex stores; the blog
-render pipeline resolves that URI to `/YYYY/MM/DD/{slug}` at render
-time.
+You can link from one Valeon post to another. The plugin handles
+translation to a stable identifier on push, and back to something
+human-readable on pull, so you keep writing normal markdown and the
+link survives folder renames, slug changes, and editing the same post
+from the web dashboard.
 
-| Form | When to use |
+**To write a cross-post link, use one of these two forms:**
+
+```markdown
+For my own posts, point at the other post.md file:
+[my earlier piece](../2026-04-12-warmup/post.md)
+
+For another author's post (or your own via canonical URL),
+paste the blog URL straight from the address bar:
+[Sarah's essay](https://valeon.blog/2026/04/15/sarahs-essay)
+```
+
+Obsidian's autocomplete will offer the dated folder name as you type
+`../`, which keeps the first form fast. The canonical-URL form is
+the only way to reference posts not in your vault.
+
+Both forms support `#anchor` fragments and `?query` strings, preserved
+end-to-end:
+
+```markdown
+[the intro section](../2026-04-12-warmup/post.md#intro)
+[via card](https://valeon.blog/2026/04/15/sarahs-essay?ref=card)
+```
+
+**What happens on publish.** `Valeon: Publish` translates either form
+into a stable `valeon:post:{id}` URI before sending the body to
+Convex. Your local `post.md` file is **not modified** — only the
+transport copy that lands in the database. The blog's render pipeline
+resolves the URI to `/YYYY/MM/DD/{slug}` at render time, so the
+rendered link always points at the target's current canonical URL even
+if its slug or publication date changes later.
+
+**What happens on pull.** `Valeon: Pull post` and `Valeon: Sync vault`
+reverse the translation, writing the most useful local form back into
+your `post.md`:
+
+| Referenced post state | What lands in your local file |
 |---|---|
-| `[text](../2026-04-15-other-post/post.md)` | Linking to one of **your own** posts. Obsidian's wiki-link autocomplete makes typing the folder name easy. |
-| `[text](https://valeon.blog/2026/04/15/other-post)` | Linking to **another author's** post (or your own via the canonical URL). Paste the URL straight from a browser tab. |
+| Owned by you, already in this vault | `../folder/post.md` — clickable inside Obsidian |
+| Foreign, already published | `https://valeon.blog/YYYY/MM/DD/slug` — clickable in the browser via Obsidian's link handler |
+| Foreign, still draft (or archived) | `valeon:post:{id}` left verbatim — not clickable in Obsidian, but rewrites itself to a real URL on the next pull once the target publishes |
 
-**On pull**, the plugin reverses the translation:
+You'll occasionally see the third row if you reference a friend's
+draft. It's harmless; the URI round-trips on the next publish, and the
+blog renders a "broken link" 404 in the meantime until the target ships.
 
-- Your own posts → folder-relative path (`../folder/post.md`) so
-  links remain clickable inside Obsidian.
-- Foreign published posts → canonical blog URL.
-- Foreign draft/archived posts → `valeon:post:{id}` URI left in
-  place; round-trips fine on next push, and resolves to a real URL
-  once the target publishes.
+**Lint catches problems before publish.** `Valeon: Lint post` (run
+implicitly by `Valeon: Publish`) flags these cases as errors and
+blocks the push:
 
-**Lint catches unresolvable refs** (target not local, target hasn't
-been linked to Valeon yet, blog URL doesn't match a published post)
-and blocks publish until they're fixed.
+- **Folder-path form points at a file that doesn't exist in your vault.**
+  Either the path is wrong, or the target hasn't been pulled yet.
+- **Folder-path form points at a file with no `valeon.postId` in
+  frontmatter.** The target exists locally but hasn't been linked to
+  Valeon — publish it first (or run `Valeon: Reconcile vault`).
+- **Canonical URL doesn't match any published post.** The slug in the
+  URL doesn't exist on the server, or the post is still a draft. (Draft
+  slugs aren't reachable until publication; the URL form only works
+  for published posts.)
+
+**Editing from the web dashboard.** The author dashboard's editor
+supports the same cross-post mechanism — `/post` slash command, a
+search-posts mode in the Cmd+K link dialog, and paste-detection of
+canonical blog URLs. Posts edited in the dashboard produce the same
+`valeon:post:{id}` wire form, so if you pull one of those posts into
+Obsidian afterwards you'll see the local equivalents (folder paths or
+canonical URLs) in the file.
 
 ## Conflict handling
 
