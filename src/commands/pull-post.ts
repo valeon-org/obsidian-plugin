@@ -125,34 +125,41 @@ async function applyPull(
 
 	const folderPath = file.parent?.path ?? "";
 
+	// Build a sha256 → local-path index over the post folder + ./assets/
+	// so we can reuse byte-identical files instead of re-downloading. Cheap
+	// for typical post folders (cover + a handful of inline assets).
+	const localSha256Index = await buildLocalSha256Index(app, folderPath);
+
 	// Download any media we don't have locally.
 	const mediaMap: Record<string, string> = { ...(prevValeon.media ?? {}) };
 	const storageToFilename: Record<string, string> = {};
 	for (const ref of response.mediaRefs) {
-		const have = ref.sha256 && mediaMap[ref.sha256] === ref.storageId;
-		if (have) {
-			// Find the local file with this hash by scanning the folder.
-			// (We don't store hash → path locally; storage already does.)
-			const localPath = await findLocalAssetByStorageId(
-				app,
-				folderPath,
-				ref.storageId,
-				prevValeon,
-			);
+		// Dedup: same bytes already on disk → reuse the local path. Avoids
+		// the 1-2 MB cover re-download on every Pull post of an unchanged
+		// post, and keeps the frontmatter cover ref stable.
+		if (ref.sha256) {
+			const localPath = localSha256Index.get(ref.sha256);
 			if (localPath) {
 				storageToFilename[ref.storageId] = localPath;
+				mediaMap[ref.sha256] = ref.storageId;
 				continue;
 			}
 		}
 		// Download.
-		const bytes = await api.downloadMedia(ref.storageId);
-		const subdir = isCoverStorage(response.coverStorageId, ref.storageId)
-			? folderPath
-			: `${folderPath}/assets`;
+		const isCover = isCoverStorage(response.coverStorageId, ref.storageId);
+		const subdir = isCover ? folderPath : `${folderPath}/assets`;
 		if (!(await app.vault.adapter.exists(subdir))) {
 			await app.vault.createFolder(subdir);
 		}
-		const filename = pickLocalFilename(ref.filename, ref.mimeType, subdir);
+		// Covers always land at `cover.<ext>` to match restore-vault's
+		// naming convention; without this the cover frontmatter ref
+		// churns between pulls (pickLocalFilename uses whatever name the
+		// server's media row stored, often a generated `post-cover-{id}`
+		// from the dashboard upload form).
+		const filename = isCover
+			? `cover.${extFromMime(ref.mimeType)}`
+			: pickLocalFilename(ref.filename, ref.mimeType, subdir);
+		const bytes = await api.downloadMedia(ref.storageId);
 		const path = `${subdir}/${filename}`;
 		await app.vault.adapter.writeBinary(path, bytes);
 		storageToFilename[ref.storageId] = path;
@@ -224,13 +231,33 @@ function pickLocalFilename(
 	return base.includes(".") ? base : `${base}.${ext}`;
 }
 
-async function findLocalAssetByStorageId(
-	_app: App,
-	_folderPath: string,
-	_storageId: string,
-	_valeon: ValeonMeta,
-): Promise<string | null> {
-	// Currently no reverse index — return null so we re-download. The
-	// dedup-by-sha256 check above prevents bloat; this is just slower.
-	return null;
+/**
+ * Walk the post folder + ./assets/ subfolder, compute sha256 of each
+ * file, and return a `sha256 → vault-path` index. Used by the pull
+ * dedup pass to reuse byte-identical local files instead of
+ * re-downloading.
+ *
+ * Cheap in practice: covers + a handful of inline assets per post.
+ * Unreadable files (permission, broken symlink) are skipped.
+ */
+async function buildLocalSha256Index(
+	app: App,
+	folderPath: string,
+): Promise<Map<string, string>> {
+	const out = new Map<string, string>();
+	if (!folderPath) return out;
+	for (const dir of [folderPath, `${folderPath}/assets`]) {
+		if (!(await app.vault.adapter.exists(dir))) continue;
+		const list = await app.vault.adapter.list(dir);
+		for (const filePath of list.files) {
+			try {
+				const bytes = await app.vault.adapter.readBinary(filePath);
+				const hash = await sha256Hex(bytes);
+				out.set(hash, filePath);
+			} catch {
+				// Unreadable file — skip and let the download path handle it.
+			}
+		}
+	}
+	return out;
 }
