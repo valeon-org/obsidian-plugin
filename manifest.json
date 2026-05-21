@@ -1,7 +1,7 @@
 {
 	"id": "valeon",
 	"name": "Valeon",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"minAppVersion": "1.5.0",
 	"description": "Publish, edit, and sync posts with the Valeon author dashboard. Lints frontmatter against the live schema, handles inline images and assets, and reconciles the vault with remote state.",
 	"author": "Sayed Hamid Fatimi",
