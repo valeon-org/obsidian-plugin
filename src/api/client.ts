@@ -1,8 +1,10 @@
 import { requestUrl } from "obsidian";
 import type {
 	ApiError,
+	CoverStylesResponse,
 	FetchResponse,
 	FinalizeResponse,
+	GenerateCoverResponse,
 	ListResponse,
 	MatchResponse,
 	ObsidianFrontmatter,
@@ -136,6 +138,28 @@ export class ValeonApi {
 		return this.request<ResolveRefsResponse>(
 			"/api/obsidian/posts/resolve-refs",
 			{ ids },
+		);
+	}
+
+	/** Fetch the AI cover style catalog (labels + option ids only). */
+	listCoverStyles() {
+		return this.request<CoverStylesResponse>("/api/obsidian/covers/styles");
+	}
+
+	/**
+	 * Generate an AI cover image. Returns the storageId of the stored PNG;
+	 * the caller downloads it via `downloadMedia`. Note this is a slow
+	 * (~10-30s) call — the OpenAI image request runs synchronously.
+	 */
+	generateCover(args: {
+		prompt: string;
+		styleCode: string;
+		variantId?: string;
+		hue?: string;
+	}) {
+		return this.request<GenerateCoverResponse>(
+			"/api/obsidian/covers/generate",
+			args,
 		);
 	}
 

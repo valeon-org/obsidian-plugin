@@ -4,6 +4,7 @@ import { ValeonApi } from "./api/client";
 declare const __VALEON_API_BASE_URL__: string;
 declare const __VALEON_DASHBOARD_BASE_URL__: string;
 import { type PersistedCache, SchemaCache } from "./api/schema-cache";
+import { runGenerateCover } from "./commands/generate-cover";
 import { runLint } from "./commands/lint-post";
 import { runNewPost } from "./commands/new-post";
 import { runOpenInDashboard } from "./commands/open-in-dashboard";
@@ -165,6 +166,25 @@ export default class ValeonPlugin extends Plugin {
 							file,
 							api: this.getApi(),
 							cache: this.cache,
+						}).then(() => this.refreshStatus()),
+					);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "generate-cover",
+			name: "Generate cover with AI",
+			checkCallback: (checking) => {
+				const file = this.activeMarkdownFile();
+				if (!file) return false;
+				if (!checking) {
+					this.safeRun(() =>
+						runGenerateCover({
+							app: this.app,
+							file,
+							api: this.getApi(),
 						}).then(() => this.refreshStatus()),
 					);
 				}

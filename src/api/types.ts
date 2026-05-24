@@ -166,3 +166,18 @@ export type ReferenceTarget = {
 export type ResolveRefsResponse = {
 	targets: Array<ReferenceTarget | null>;
 };
+
+// AI cover image generation. Mirrors coverImageStyles.coverStyleCatalog()
+// and the /api/obsidian/covers/* routes in valeon-blog/convex/http.ts.
+export type CoverStyleMeta = {
+	code: string;
+	name: string;
+	register: string;
+	primaryUse: string;
+	variants: Array<{ id: string; name: string; hint: string }>;
+	hues: Array<{ id: string; name: string }>;
+};
+
+export type CoverStylesResponse = { styles: CoverStyleMeta[] };
+
+export type GenerateCoverResponse = { storageId: string };
