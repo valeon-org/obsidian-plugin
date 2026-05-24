@@ -158,6 +158,14 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 				message: `Cover image not found: ${resolved}`,
 			});
 		}
+		if (!frontmatter.coverAlt?.trim()) {
+			issues.push({
+				severity: "warning",
+				field: "coverAlt",
+				message:
+					"cover is set but coverAlt is missing — add alt text describing the image.",
+			});
+		}
 	}
 
 	// Body asset references — existence + MIME allowed.

@@ -55,16 +55,17 @@ export async function runGenerateCover(args: {
 	await app.vault.adapter.writeBinary(coverPath, bytes);
 
 	// Re-read in case the note changed during the slow generation, then
-	// set the cover frontmatter and write back.
+	// set the cover frontmatter and write back. coverAlt is intentionally
+	// left for the author: auto-filling it from the prompt produces
+	// inaccurate alt text that silently looks finished.
 	const note = parseNote(await app.vault.read(file));
 	note.frontmatter.cover = "./cover.png";
-	if (!note.frontmatter.coverAlt) {
-		note.frontmatter.coverAlt = choice.prompt.slice(0, 120);
-	}
 	await app.vault.modify(
 		file,
 		stringifyNote(note.frontmatter, note.valeon, note.body),
 	);
 
-	new Notice("Valeon: cover generated → ./cover.png");
+	new Notice(
+		"Valeon: cover generated → ./cover.png. Add coverAlt before publishing.",
+	);
 }
