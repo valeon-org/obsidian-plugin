@@ -69,6 +69,8 @@ ignored by sync, publish, lint, and reconcile.
 | `Valeon: Slugify tags (current file)` | Kebab-cases all tag values in frontmatter. |
 | `Valeon: Slugify tags (vault)` | Same, vault-wide. |
 | `Valeon: Generate cover with AI` | Generates a styled cover for the current post using the Valeon image model. Pick a named style (and variant/hue where applicable); saves the result as `./cover.png` and sets the `cover` frontmatter. Write your own `coverAlt`. Publish uploads it like any other asset. |
+| `Valeon: Suggest excerpt with AI` | Generates an excerpt from the post body and writes it into the `excerpt` frontmatter for you to review and edit. |
+| `Valeon: Suggest cover alt text with AI` | Describes the post's cover image (a vision pass) and writes the result into `coverAlt` for you to review and edit. Requires `cover` to be set. |
 | `Valeon: Publish` | Lints, uploads new local assets, pushes to the dashboard. First publish creates and publishes; subsequent calls update the draft buffer and republish. |
 | `Valeon: Pull post (published)` | Pulls the live published body + frontmatter into the local note. Downloads any new media into `./assets/`. |
 | `Valeon: Pull post (draft buffer)` | Same, but prefers the draft buffer. |
@@ -212,9 +214,10 @@ coverAlt: A clay model of the new logo on a wooden desk.
 Or generate one: run **`Valeon: Generate cover with AI`** on the post, pick a
 style, and the plugin saves the image as `./cover.png` in the post folder and
 sets the `cover` frontmatter (the subject defaults to the post's excerpt or
-title). Write your own `coverAlt` describing the result before publishing — the
-plugin deliberately doesn't auto-fill it, since only you can describe what was
-actually rendered. It then publishes like any other cover.
+title). Generation doesn't fill in `coverAlt` — write your own, or run
+**`Valeon: Suggest cover alt text with AI`** for an editable suggestion drawn
+from a vision pass over the rendered image. It then publishes like any other
+cover.
 
 **What the plugin does on publish:**
 

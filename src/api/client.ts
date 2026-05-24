@@ -12,6 +12,8 @@ import type {
 	ResolveRefsResponse,
 	ResolveSlugResponse,
 	ServerSchema,
+	SuggestCoverAltResponse,
+	SuggestExcerptResponse,
 	Taxonomy,
 	UploadUrlResponse,
 	Whoami,
@@ -160,6 +162,22 @@ export class ValeonApi {
 		return this.request<GenerateCoverResponse>(
 			"/api/obsidian/covers/generate",
 			args,
+		);
+	}
+
+	/** Suggest a post excerpt from its markdown body (OpenAI-backed). */
+	suggestExcerpt(markdown: string) {
+		return this.request<SuggestExcerptResponse>(
+			"/api/obsidian/suggest/excerpt",
+			{ markdown },
+		);
+	}
+
+	/** Suggest cover alt text via a vision pass over the uploaded cover. */
+	suggestCoverAlt(storageId: string) {
+		return this.request<SuggestCoverAltResponse>(
+			"/api/obsidian/suggest/cover-alt",
+			{ storageId },
 		);
 	}
 

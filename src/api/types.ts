@@ -181,3 +181,9 @@ export type CoverStyleMeta = {
 export type CoverStylesResponse = { styles: CoverStyleMeta[] };
 
 export type GenerateCoverResponse = { storageId: string };
+
+// AI authoring suggestions (OpenAI-backed). Both pre-fill editable
+// frontmatter; the author reviews before publishing.
+export type SuggestExcerptResponse = { excerpt: string };
+
+export type SuggestCoverAltResponse = { alt: string };

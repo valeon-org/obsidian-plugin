@@ -17,6 +17,8 @@ import { pullCurrentFile } from "./commands/pull-post";
 import { runReconcile } from "./commands/reconcile-vault";
 import { runRestoreVault } from "./commands/restore-vault";
 import { runSlugifyCurrent, runSlugifyVault } from "./commands/slugify-tags";
+import { runSuggestCoverAlt } from "./commands/suggest-cover-alt";
+import { runSuggestExcerpt } from "./commands/suggest-excerpt";
 import { runSyncTemplate } from "./commands/sync-template";
 import { runSyncVault } from "./commands/sync-vault";
 import { parseNote } from "./lib/frontmatter";
@@ -182,6 +184,44 @@ export default class ValeonPlugin extends Plugin {
 				if (!checking) {
 					this.safeRun(() =>
 						runGenerateCover({
+							app: this.app,
+							file,
+							api: this.getApi(),
+						}).then(() => this.refreshStatus()),
+					);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "suggest-excerpt",
+			name: "Suggest excerpt with AI",
+			checkCallback: (checking) => {
+				const file = this.activeMarkdownFile();
+				if (!file) return false;
+				if (!checking) {
+					this.safeRun(() =>
+						runSuggestExcerpt({
+							app: this.app,
+							file,
+							api: this.getApi(),
+						}).then(() => this.refreshStatus()),
+					);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "suggest-cover-alt",
+			name: "Suggest cover alt text with AI",
+			checkCallback: (checking) => {
+				const file = this.activeMarkdownFile();
+				if (!file) return false;
+				if (!checking) {
+					this.safeRun(() =>
+						runSuggestCoverAlt({
 							app: this.app,
 							file,
 							api: this.getApi(),
