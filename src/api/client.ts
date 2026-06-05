@@ -14,6 +14,7 @@ import type {
 	ServerSchema,
 	SuggestCoverAltResponse,
 	SuggestExcerptResponse,
+	SuggestTagsResponse,
 	Taxonomy,
 	UploadUrlResponse,
 	Whoami,
@@ -179,6 +180,15 @@ export class ValeonApi {
 			"/api/obsidian/suggest/cover-alt",
 			{ storageId },
 		);
+	}
+
+	/** Suggest tags for the post; returns reusable existing tags + proposed new ones. */
+	suggestTags(title: string, markdown: string, currentSlugs: string[]) {
+		return this.request<SuggestTagsResponse>("/api/obsidian/suggest/tags", {
+			title,
+			markdown,
+			currentSlugs,
+		});
 	}
 
 	uploadUrl() {

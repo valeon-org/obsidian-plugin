@@ -187,3 +187,8 @@ export type GenerateCoverResponse = { storageId: string };
 export type SuggestExcerptResponse = { excerpt: string };
 
 export type SuggestCoverAltResponse = { alt: string };
+
+export type SuggestTagsResponse = {
+	existing: Array<{ _id: string; slug: string; name: string }>;
+	new: Array<{ slug: string; name: string }>;
+};

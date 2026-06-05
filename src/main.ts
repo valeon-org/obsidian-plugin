@@ -3,6 +3,7 @@ import { ValeonApi } from "./api/client";
 
 declare const __VALEON_API_BASE_URL__: string;
 declare const __VALEON_DASHBOARD_BASE_URL__: string;
+
 import { type PersistedCache, SchemaCache } from "./api/schema-cache";
 import { runGenerateCover } from "./commands/generate-cover";
 import { runLint } from "./commands/lint-post";
@@ -19,14 +20,15 @@ import { runRestoreVault } from "./commands/restore-vault";
 import { runSlugifyCurrent, runSlugifyVault } from "./commands/slugify-tags";
 import { runSuggestCoverAlt } from "./commands/suggest-cover-alt";
 import { runSuggestExcerpt } from "./commands/suggest-excerpt";
+import { runSuggestTags } from "./commands/suggest-tags";
 import { runSyncTemplate } from "./commands/sync-template";
 import { runSyncVault } from "./commands/sync-vault";
 import { parseNote } from "./lib/frontmatter";
 import { sha256Hex } from "./lib/sha256";
 import {
 	DEFAULT_SETTINGS,
-	ValeonSettingTab,
 	type ValeonSettings,
+	ValeonSettingTab,
 } from "./settings";
 import { computeStatus, renderStatus } from "./ui/status-bar";
 
@@ -203,6 +205,25 @@ export default class ValeonPlugin extends Plugin {
 				if (!checking) {
 					this.safeRun(() =>
 						runSuggestExcerpt({
+							app: this.app,
+							file,
+							api: this.getApi(),
+						}).then(() => this.refreshStatus()),
+					);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "suggest-tags",
+			name: "Suggest tags with AI",
+			checkCallback: (checking) => {
+				const file = this.activeMarkdownFile();
+				if (!file) return false;
+				if (!checking) {
+					this.safeRun(() =>
+						runSuggestTags({
 							app: this.app,
 							file,
 							api: this.getApi(),
