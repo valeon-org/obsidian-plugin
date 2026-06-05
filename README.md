@@ -71,6 +71,7 @@ ignored by sync, publish, lint, and reconcile.
 | `Valeon: Generate cover with AI` | Generates a styled cover for the current post using the Valeon image model. Pick a named style (and variant/hue where applicable); saves the result as `./cover.png` and sets the `cover` frontmatter. Write your own `coverAlt`. Publish uploads it like any other asset. |
 | `Valeon: Suggest excerpt with AI` | Generates an excerpt from the post body and writes it into the `excerpt` frontmatter for you to review and edit. |
 | `Valeon: Suggest cover alt text with AI` | Describes the post's cover image (a vision pass) and writes the result into `coverAlt` for you to review and edit. Requires `cover` to be set. |
+| `Valeon: Suggest tags with AI` | Suggests tags for the current note and merges them into the `tags` frontmatter (as slugs) for you to review and edit before publishing. Prefers your existing tags. |
 | `Valeon: Publish` | Lints, uploads new local assets, pushes to the dashboard. First publish creates and publishes; subsequent calls update the draft buffer and republish. |
 | `Valeon: Pull post (published)` | Pulls the live published body + frontmatter into the local note. Downloads any new media into `./assets/`. |
 | `Valeon: Pull post (draft buffer)` | Same, but prefers the draft buffer. |
@@ -82,6 +83,14 @@ ignored by sync, publish, lint, and reconcile.
 | `Valeon: Reconcile vault (apply)` | Writes the `valeon.postId` into every matched note. Idempotent. |
 | `Valeon: Restore vault from server` | Downloads every post you own from the server into a fresh folder structure. |
 | `Valeon: Open in dashboard` | Opens the linked post's editor URL in your browser. |
+
+**Automatic tagging on publish.** If you publish a post with fewer than 5
+tags, Valeon tops it up in the background so it ends up with 5–15 tags,
+reusing your existing tags wherever possible and only minting a few new
+ones when nothing fits. Any tags you set yourself are kept and take
+priority — auto-tagging never removes your tags or exceeds 15. You can
+always set tags yourself, or run `Valeon: Suggest tags with AI` first to
+review suggestions before publishing.
 
 ## First-time backfill
 
