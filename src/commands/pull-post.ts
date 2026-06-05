@@ -220,7 +220,7 @@ function isCoverStorage(cover: string | undefined, storageId: string): boolean {
 function pickLocalFilename(
 	preferred: string,
 	mimeType: string,
-	dir: string,
+	_dir: string,
 ): string {
 	const ext = extFromMime(mimeType);
 	const base =

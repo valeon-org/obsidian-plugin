@@ -16,7 +16,7 @@ export async function runNewPost(args: {
 	getTitle: () => Promise<string | null>;
 }) {
 	const title = await args.getTitle();
-	if (!title || !title.trim()) return;
+	if (!title?.trim()) return;
 
 	const folder = makeDatedFolder(title.trim());
 	const filePath = `${folder}/post.md`;
@@ -44,7 +44,7 @@ export async function runNewPost(args: {
 
 function renderTemplate(title: string, cache: SchemaCache): string {
 	const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-	const date = todayUtc();
+	const _date = todayUtc();
 	const categories = cache.taxonomy?.categories.map((c) => `  - ${c.slug}`) ?? [
 		"  - economy-and-finance",
 	];

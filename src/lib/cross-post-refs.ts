@@ -116,7 +116,7 @@ export async function rewriteCrossPostForPull(
 	if (foreignIds.length > 0) {
 		const result = await api.resolveReferenceTargets(foreignIds);
 		for (const t of result.targets) {
-			if (!t || t.status !== "published" || !t.publishedAt) continue;
+			if (t?.status !== "published" || !t.publishedAt) continue;
 			foreignToUrl.set(t.id, buildCanonicalUrl(t.slug, t.publishedAt));
 		}
 	}

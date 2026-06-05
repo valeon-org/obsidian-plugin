@@ -1,4 +1,4 @@
-import { type App, Notice, type TFile } from "obsidian";
+import { type App, Notice } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import { parseNote } from "../lib/frontmatter";
 import { pullCurrentFile } from "./pull-post";
