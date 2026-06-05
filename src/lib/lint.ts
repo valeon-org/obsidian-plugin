@@ -89,6 +89,20 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 		});
 	}
 
+	// Tag count — hard ceiling enforced server-side at publish.
+	const maxTags = schema.constraints.tags?.maxCount;
+	if (
+		maxTags !== undefined &&
+		frontmatter.tags &&
+		frontmatter.tags.length > maxTags
+	) {
+		issues.push({
+			severity: "error",
+			field: "tags",
+			message: `Too many tags (${frontmatter.tags.length}); max is ${maxTags}.`,
+		});
+	}
+
 	// tts → podcast invariant.
 	if (frontmatter.tts === false && frontmatter.podcast === true) {
 		issues.push({

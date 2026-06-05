@@ -45,6 +45,7 @@ export type ServerSchema = {
 	constraints: {
 		excerpt: { maxLength: number };
 		slug: { pattern: string };
+		tags?: { maxCount: number };
 	};
 	media: {
 		maxSizeBytes: number;
