@@ -90,7 +90,9 @@ reusing your existing tags wherever possible and only minting a few new
 ones when nothing fits. Any tags you set yourself are kept and take
 priority — auto-tagging never removes your tags or exceeds 15. You can
 always set tags yourself, or run `Valeon: Suggest tags with AI` first to
-review suggestions before publishing.
+review suggestions before publishing. Fifteen is a hard ceiling: add more
+by hand and `Valeon: Lint post` flags it as an error and publish is
+rejected until you trim the list.
 
 ## First-time backfill
 
@@ -138,8 +140,8 @@ not redundant:
 
 - **`Valeon: Lint post` validates** your frontmatter against the live server
   schema — required keys, allowed category enums, slug pattern, excerpt
-  length, etc. It does not modify the file; it surfaces errors so publish
-  will succeed.
+  length, tag count (max 15), etc. It does not modify the file; it surfaces
+  errors so publish will succeed.
 - **Victor Tao's Linter formats** YAML and body — sorts keys, normalises
   timestamps, escapes special characters, trims whitespace, enforces
   heading and list style. It does not check whether your post is valid for
