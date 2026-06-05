@@ -4,7 +4,7 @@ import type { FetchResponse } from "../api/types";
 import { rewriteForPull } from "../lib/body-rewriter";
 import { detectConflict } from "../lib/conflict";
 import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
-import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
+import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
 import { type ConflictChoice, ConflictModal } from "../ui/conflict-modal";

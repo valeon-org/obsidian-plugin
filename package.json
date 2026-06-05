@@ -11,7 +11,9 @@
 		"format": "biome check --write .",
 		"lint": "biome check ."
 	},
-	"keywords": ["obsidian-plugin"],
+	"keywords": [
+		"obsidian-plugin"
+	],
 	"author": "Sayed Hamid Fatimi",
 	"license": "MIT",
 	"devDependencies": {

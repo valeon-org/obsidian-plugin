@@ -4,7 +4,7 @@ import type { SchemaCache } from "../api/schema-cache";
 import { resolveInsideFolder } from "../lib/asset-resolver";
 import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
 import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
-import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
+import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { lintPost, mimeFromExt } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
 import { slugFromFolder } from "../lib/slug";
@@ -113,7 +113,7 @@ export async function runPublish(args: {
 	}
 
 	// Cover.
-	let coverStorageId: string | undefined = undefined;
+	let coverStorageId: string | undefined;
 	if (parsed.frontmatter.cover) {
 		const resolved = resolveInsideFolder(folderPath, parsed.frontmatter.cover);
 		if (resolved) {

@@ -3,7 +3,7 @@ import type { ValeonApi } from "../api/client";
 import type { ListedPost, ObsidianFrontmatter } from "../api/types";
 import { rewriteForPull } from "../lib/body-rewriter";
 import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
-import { type ValeonMeta, stringifyNote } from "../lib/frontmatter";
+import { stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
 import { sha256Hex } from "../lib/sha256";
 

@@ -1,7 +1,7 @@
 import { type App, Notice, type TFile } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import type { ObsidianFrontmatter } from "../api/types";
-import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
+import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 
 /*
  * `Valeon: Pull metadata (current note)` — refresh server-derived
@@ -44,10 +44,7 @@ export async function runPullMetadata(args: {
  * Useful right after a fresh reconcile when local dates were dropped
  * by a prior parser bug and need to be re-hydrated from the server.
  */
-export async function runPullMetadataVault(args: {
-	app: App;
-	api: ValeonApi;
-}) {
+export async function runPullMetadataVault(args: { app: App; api: ValeonApi }) {
 	const files = args.app.vault
 		.getMarkdownFiles()
 		.filter(

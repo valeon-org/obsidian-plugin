@@ -1,7 +1,7 @@
 import { type App, Notice } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import type { MatchResult } from "../api/types";
-import { type ValeonMeta, parseNote, stringifyNote } from "../lib/frontmatter";
+import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { slugFromFolder } from "../lib/slug";
 
 /*
