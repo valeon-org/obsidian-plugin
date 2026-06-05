@@ -28,6 +28,9 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Lint (Obsidian community review rules)
+        run: bun run lint:obsidian
+
       - name: Build
         run: bun run build
 
