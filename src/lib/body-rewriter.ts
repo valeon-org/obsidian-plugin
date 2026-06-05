@@ -40,48 +40,76 @@ export type Rewriter = (
  */
 export const rewriteForPush: Rewriter = (body, folderPath, resolve) => {
 	// 1. Wiki-link images → standard markdown image.
-	let out = body.replace(WIKI_IMAGE_RE, (full, target, alias) => {
-		const linkPath = `./${target.trim()}`;
-		const resolved = resolveInsideFolder(folderPath, linkPath);
-		if (!resolved) return full; // not a local asset, leave as-is
-		const hit = resolve(resolved);
-		if (!hit) return full;
-		const alt = alias ? alias.trim() : target.trim();
-		return `![${alt}](/m/${hit.storageId})`;
-	});
+	let out = body.replace(
+		WIKI_IMAGE_RE,
+		(full: string, target: string, alias: string | undefined): string => {
+			const linkPath = `./${target.trim()}`;
+			const resolved = resolveInsideFolder(folderPath, linkPath);
+			if (!resolved) return full; // not a local asset, leave as-is
+			const hit = resolve(resolved);
+			if (!hit) return full;
+			const alt = alias ? alias.trim() : target.trim();
+			return `![${alt}](/m/${hit.storageId})`;
+		},
+	);
 
 	// 2. Wiki-link non-image → standard markdown link.
-	out = out.replace(WIKI_LINK_RE, (full, prefix, target, alias) => {
-		const linkPath = `./${target.trim()}`;
-		const resolved = resolveInsideFolder(folderPath, linkPath);
-		if (!resolved) return full;
-		const hit = resolve(resolved);
-		if (!hit) return full;
-		const label = alias ? alias.trim() : target.trim();
-		return `${prefix}[${label}](/m/${hit.storageId})`;
-	});
+	out = out.replace(
+		WIKI_LINK_RE,
+		(
+			full: string,
+			prefix: string,
+			target: string,
+			alias: string | undefined,
+		): string => {
+			const linkPath = `./${target.trim()}`;
+			const resolved = resolveInsideFolder(folderPath, linkPath);
+			if (!resolved) return full;
+			const hit = resolve(resolved);
+			if (!hit) return full;
+			const label = alias ? alias.trim() : target.trim();
+			return `${prefix}[${label}](/m/${hit.storageId})`;
+		},
+	);
 
 	// 3. Standard markdown images.
-	out = out.replace(MARKDOWN_IMAGE_RE, (full, alt, target, title) => {
-		if (isExternalUrl(target)) return full;
-		const resolved = resolveInsideFolder(folderPath, target);
-		if (!resolved) return full;
-		const hit = resolve(resolved);
-		if (!hit) return full;
-		const t = title ? ` "${title}"` : "";
-		return `![${alt}](/m/${hit.storageId}${t})`;
-	});
+	out = out.replace(
+		MARKDOWN_IMAGE_RE,
+		(
+			full: string,
+			alt: string,
+			target: string,
+			title: string | undefined,
+		): string => {
+			if (isExternalUrl(target)) return full;
+			const resolved = resolveInsideFolder(folderPath, target);
+			if (!resolved) return full;
+			const hit = resolve(resolved);
+			if (!hit) return full;
+			const t = title ? ` "${title}"` : "";
+			return `![${alt}](/m/${hit.storageId}${t})`;
+		},
+	);
 
 	// 4. Standard markdown links (non-image).
-	out = out.replace(MARKDOWN_LINK_RE, (full, prefix, label, target, title) => {
-		if (isExternalUrl(target)) return full;
-		const resolved = resolveInsideFolder(folderPath, target);
-		if (!resolved) return full;
-		const hit = resolve(resolved);
-		if (!hit) return full;
-		const t = title ? ` "${title}"` : "";
-		return `${prefix}[${label}](/m/${hit.storageId}${t})`;
-	});
+	out = out.replace(
+		MARKDOWN_LINK_RE,
+		(
+			full: string,
+			prefix: string,
+			label: string,
+			target: string,
+			title: string | undefined,
+		): string => {
+			if (isExternalUrl(target)) return full;
+			const resolved = resolveInsideFolder(folderPath, target);
+			if (!resolved) return full;
+			const hit = resolve(resolved);
+			if (!hit) return full;
+			const t = title ? ` "${title}"` : "";
+			return `${prefix}[${label}](/m/${hit.storageId}${t})`;
+		},
+	);
 
 	return out;
 };
@@ -93,22 +121,39 @@ export const rewriteForPush: Rewriter = (body, folderPath, resolve) => {
 export type PullResolver = (storageId: string) => string | null;
 
 export function rewriteForPull(body: string, resolve: PullResolver): string {
-	let out = body.replace(MARKDOWN_IMAGE_RE, (full, alt, target, title) => {
-		const m = target.match(/^\/m\/([A-Za-z0-9_-]+)$/);
-		if (!m) return full;
-		const relPath = resolve(m[1]);
-		if (!relPath) return full;
-		const t = title ? ` "${title}"` : "";
-		return `![${alt}](${relPath}${t})`;
-	});
-	out = out.replace(MARKDOWN_LINK_RE, (full, prefix, label, target, title) => {
-		const m = target.match(/^\/m\/([A-Za-z0-9_-]+)$/);
-		if (!m) return full;
-		const relPath = resolve(m[1]);
-		if (!relPath) return full;
-		const t = title ? ` "${title}"` : "";
-		return `${prefix}[${label}](${relPath}${t})`;
-	});
+	let out = body.replace(
+		MARKDOWN_IMAGE_RE,
+		(
+			full: string,
+			alt: string,
+			target: string,
+			title: string | undefined,
+		): string => {
+			const m = target.match(/^\/m\/([A-Za-z0-9_-]+)$/);
+			if (!m) return full;
+			const relPath = resolve(m[1]);
+			if (!relPath) return full;
+			const t = title ? ` "${title}"` : "";
+			return `![${alt}](${relPath}${t})`;
+		},
+	);
+	out = out.replace(
+		MARKDOWN_LINK_RE,
+		(
+			full: string,
+			prefix: string,
+			label: string,
+			target: string,
+			title: string | undefined,
+		): string => {
+			const m = target.match(/^\/m\/([A-Za-z0-9_-]+)$/);
+			if (!m) return full;
+			const relPath = resolve(m[1]);
+			if (!relPath) return full;
+			const t = title ? ` "${title}"` : "";
+			return `${prefix}[${label}](${relPath}${t})`;
+		},
+	);
 	return out;
 }
 

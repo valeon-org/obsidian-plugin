@@ -65,7 +65,7 @@ export function parseNote(raw: string): ParsedNote {
 	if (match) {
 		const yamlText = match[1];
 		body = raw.slice(match[0].length);
-		const parsed = parseYaml(yamlText);
+		const parsed: unknown = parseYaml(yamlText);
 		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
 			data = parsed as Record<string, unknown>;
 		}

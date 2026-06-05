@@ -18,27 +18,31 @@ export type StatusState =
 
 export function renderStatus(el: HTMLElement, state: StatusState) {
 	el.empty();
-	const dot = el.createSpan({ text: "●" });
-	dot.style.marginRight = "4px";
+	el.removeClasses([
+		"valeon-status--muted",
+		"valeon-status--success",
+		"valeon-status--warning",
+	]);
+	const dot = el.createSpan({ text: "●", cls: "valeon-status-dot" });
 	switch (state.kind) {
 		case "no-file":
-			el.style.color = "var(--text-muted)";
+			el.addClass("valeon-status--muted");
 			el.appendText("Valeon");
 			return;
 		case "unlinked":
-			dot.style.color = "var(--text-muted)";
+			dot.addClass("valeon-status--muted");
 			el.appendText("Unlinked");
 			return;
 		case "synced":
-			dot.style.color = "var(--text-success, #2ea043)";
+			dot.addClass("valeon-status--success");
 			el.appendText("Linked");
 			return;
 		case "local-newer":
-			dot.style.color = "var(--text-warning, #f0b72f)";
+			dot.addClass("valeon-status--warning");
 			el.appendText("Local edits unsaved");
 			return;
 		case "remote-newer":
-			dot.style.color = "var(--text-warning, #f0b72f)";
+			dot.addClass("valeon-status--warning");
 			el.appendText("Remote has newer");
 			return;
 	}

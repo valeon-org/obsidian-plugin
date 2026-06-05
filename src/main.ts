@@ -51,7 +51,9 @@ export default class ValeonPlugin extends Plugin {
 		this.registerCommands();
 
 		this.registerEvent(
-			this.app.workspace.on("file-open", () => this.refreshStatus()),
+			this.app.workspace.on("file-open", () => {
+				void this.refreshStatus();
+			}),
 		);
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
@@ -59,11 +61,11 @@ export default class ValeonPlugin extends Plugin {
 					file instanceof TFile &&
 					file === this.app.workspace.getActiveFile()
 				) {
-					this.refreshStatus();
+					void this.refreshStatus();
 				}
 			}),
 		);
-		this.refreshStatus();
+		void this.refreshStatus();
 	}
 
 	onunload() {
@@ -106,11 +108,13 @@ export default class ValeonPlugin extends Plugin {
 			id: "new-post",
 			name: "New post",
 			callback: () => {
-				runNewPost({
-					app: this.app,
-					cache: this.cache,
-					getTitle: () => promptForText(this.app, "New post title"),
-				});
+				this.safeRun(() =>
+					runNewPost({
+						app: this.app,
+						cache: this.cache,
+						getTitle: () => promptForText(this.app, "New post title"),
+					}),
+				);
 			},
 		});
 
@@ -130,7 +134,9 @@ export default class ValeonPlugin extends Plugin {
 					} catch {
 						api = null;
 					}
-					runLint({ app: this.app, file, cache: this.cache, api });
+					this.safeRun(() =>
+						runLint({ app: this.app, file, cache: this.cache, api }),
+					);
 				}
 				return true;
 			},
@@ -143,7 +149,9 @@ export default class ValeonPlugin extends Plugin {
 				const file = this.activeMarkdownFile();
 				if (!file) return false;
 				if (!checking) {
-					runSlugifyCurrent({ vault: this.app.vault, file });
+					this.safeRun(() =>
+						runSlugifyCurrent({ vault: this.app.vault, file }),
+					);
 				}
 				return true;
 			},
@@ -153,7 +161,7 @@ export default class ValeonPlugin extends Plugin {
 			id: "slugify-tags-vault",
 			name: "Slugify tags (vault)",
 			callback: () => {
-				runSlugifyVault({ vault: this.app.vault });
+				this.safeRun(() => runSlugifyVault({ vault: this.app.vault }));
 			},
 		});
 
@@ -399,11 +407,13 @@ export default class ValeonPlugin extends Plugin {
 				const file = this.activeMarkdownFile();
 				if (!file) return false;
 				if (!checking) {
-					runOpenInDashboard({
-						app: this.app,
-						file,
-						dashboardBaseUrl: __VALEON_DASHBOARD_BASE_URL__,
-					});
+					this.safeRun(() =>
+						runOpenInDashboard({
+							app: this.app,
+							file,
+							dashboardBaseUrl: __VALEON_DASHBOARD_BASE_URL__,
+						}),
+					);
 				}
 				return true;
 			},
@@ -417,7 +427,7 @@ export default class ValeonPlugin extends Plugin {
 
 	private async afterPull(result: { kind: string }) {
 		if (result.kind === "up-to-date") new Notice("Valeon: already up to date.");
-		this.refreshStatus();
+		await this.refreshStatus();
 	}
 
 	private safeRun(task: () => Promise<unknown>) {
@@ -479,8 +489,7 @@ class PromptModal extends Modal {
 		contentEl.empty();
 		contentEl.createEl("h2", { text: this.label });
 		const input = contentEl.createEl("input", { type: "text" });
-		input.style.width = "100%";
-		input.style.padding = "8px";
+		input.addClass("valeon-prompt-input");
 		input.addEventListener("input", (e) => {
 			this.value = (e.target as HTMLInputElement).value;
 		});
@@ -488,13 +497,9 @@ class PromptModal extends Modal {
 			if (e.key === "Enter") this.commit();
 			if (e.key === "Escape") this.cancel();
 		});
-		setTimeout(() => input.focus(), 50);
+		window.setTimeout(() => input.focus(), 50);
 
-		const row = contentEl.createDiv();
-		row.style.marginTop = "12px";
-		row.style.display = "flex";
-		row.style.justifyContent = "flex-end";
-		row.style.gap = "8px";
+		const row = contentEl.createDiv({ cls: "valeon-modal-button-row" });
 		const cancel = row.createEl("button", { text: "Cancel" });
 		cancel.addEventListener("click", () => this.cancel());
 		const ok = row.createEl("button", { text: "Create" });

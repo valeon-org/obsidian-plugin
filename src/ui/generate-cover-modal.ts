@@ -64,7 +64,7 @@ export class GenerateCoverModal extends Modal {
 					this.prompt = v;
 				});
 				ta.inputEl.rows = 3;
-				ta.inputEl.style.width = "100%";
+				ta.inputEl.addClass("valeon-full-width");
 			});
 
 		new Setting(contentEl).setName("Style").addDropdown((dd) => {
@@ -88,11 +88,7 @@ export class GenerateCoverModal extends Modal {
 		this.subControlEl = contentEl.createDiv();
 		this.renderSubControl();
 
-		const row = contentEl.createDiv();
-		row.style.marginTop = "16px";
-		row.style.display = "flex";
-		row.style.justifyContent = "flex-end";
-		row.style.gap = "8px";
+		const row = contentEl.createDiv({ cls: "valeon-modal-button-row" });
 		const cancel = row.createEl("button", { text: "Cancel" });
 		cancel.addEventListener("click", () => this.cancel());
 		const ok = row.createEl("button", { text: "Generate" });

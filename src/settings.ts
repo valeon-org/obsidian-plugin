@@ -20,7 +20,7 @@ export class ValeonSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		new Setting(containerEl).setName("Valeon publishing").setHeading();
+		new Setting(containerEl).setName("Publishing").setHeading();
 
 		new Setting(containerEl)
 			.setName("API token")

@@ -1,6 +1,6 @@
 import { type App, Notice } from "obsidian";
 import type { SchemaCache } from "../api/schema-cache";
-import { makeDatedFolder, todayUtc } from "../lib/slug";
+import { makeDatedFolder } from "../lib/slug";
 
 /*
  * `Valeon: New post` — replaces createDatedPostFolder.js.
@@ -44,7 +44,6 @@ export async function runNewPost(args: {
 
 function renderTemplate(title: string, cache: SchemaCache): string {
 	const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-	const _date = todayUtc();
 	const categories = cache.taxonomy?.categories.map((c) => `  - ${c.slug}`) ?? [
 		"  - economy-and-finance",
 	];

@@ -21,11 +21,9 @@ export class ConflictModal extends Modal {
 			text: "This file has local edits that haven't been pushed AND the remote has newer changes. Choose how to proceed.",
 		});
 
-		const buttonRow = contentEl.createDiv({ cls: "valeon-conflict-buttons" });
-		buttonRow.style.display = "flex";
-		buttonRow.style.gap = "8px";
-		buttonRow.style.marginTop = "16px";
-		buttonRow.style.justifyContent = "flex-end";
+		const buttonRow = contentEl.createDiv({
+			cls: "valeon-conflict-buttons valeon-modal-button-row",
+		});
 
 		this.button(buttonRow, "Cancel", "cancel");
 		this.button(buttonRow, "Force pull, discard local", "force", "destructive");

@@ -12,3 +12,51 @@
 .valeon-conflict-buttons button {
 	min-width: 120px;
 }
+
+.valeon-prompt-input {
+	width: 100%;
+	padding: 8px;
+}
+
+.valeon-full-width {
+	width: 100%;
+}
+
+.valeon-modal-button-row {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.valeon-conflict-buttons {
+	margin-top: 16px;
+}
+
+.valeon-lint-ok {
+	color: var(--text-success, #2ea043);
+}
+
+.valeon-lint-error-heading {
+	color: var(--text-error, #f85149);
+}
+
+.valeon-lint-warning-heading {
+	color: var(--text-warning, #f0b72f);
+}
+
+.valeon-status-dot {
+	margin-right: 4px;
+}
+
+.valeon-status--muted {
+	color: var(--text-muted);
+}
+
+.valeon-status--success {
+	color: var(--text-success, #2ea043);
+}
+
+.valeon-status--warning {
+	color: var(--text-warning, #f0b72f);
+}

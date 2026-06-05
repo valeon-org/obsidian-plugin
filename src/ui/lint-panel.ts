@@ -20,10 +20,10 @@ export class LintPanel extends Modal {
 		});
 
 		if (this.issues.length === 0) {
-			const ok = contentEl.createEl("p", {
+			contentEl.createEl("p", {
 				text: "No issues — ready to publish.",
+				cls: "valeon-lint-ok",
 			});
-			ok.style.color = "var(--text-success, #2ea043)";
 			return;
 		}
 
@@ -31,10 +31,10 @@ export class LintPanel extends Modal {
 		const warnings = this.issues.filter((i) => i.severity === "warning");
 
 		if (errors.length > 0) {
-			const h = contentEl.createEl("h3", {
+			contentEl.createEl("h3", {
 				text: `Errors (${errors.length})`,
+				cls: "valeon-lint-error-heading",
 			});
-			h.style.color = "var(--text-error, #f85149)";
 			const ul = contentEl.createEl("ul");
 			for (const issue of errors) {
 				const li = ul.createEl("li");
@@ -44,10 +44,10 @@ export class LintPanel extends Modal {
 		}
 
 		if (warnings.length > 0) {
-			const h = contentEl.createEl("h3", {
+			contentEl.createEl("h3", {
 				text: `Warnings (${warnings.length})`,
+				cls: "valeon-lint-warning-heading",
 			});
-			h.style.color = "var(--text-warning, #f0b72f)";
 			const ul = contentEl.createEl("ul");
 			for (const issue of warnings) {
 				const li = ul.createEl("li");
