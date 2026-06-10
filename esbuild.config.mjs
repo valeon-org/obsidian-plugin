@@ -7,7 +7,7 @@ const prod = process.argv[2] === "production";
 // Production defaults baked into the community-published build.
 // Override via env vars for local development against a non-prod
 // Valeon backend — see README's Development section.
-const PROD_API_BASE = "https://giant-panther-407.eu-west-1.convex.site";
+const PROD_API_BASE = "https://adorable-bison-603.convex.site";
 const PROD_DASHBOARD_BASE = "https://author.valeon.blog";
 
 const context = await esbuild.context({
