@@ -1,6 +1,7 @@
 import { type App, Notice, type TFile } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import { parseNote, stringifyNote } from "../lib/frontmatter";
+import { sha256Hex } from "../lib/sha256";
 import {
 	GenerateCoverModal,
 	type GenerateCoverResult,
@@ -14,8 +15,10 @@ import {
  *      conditional variant/hue).
  *   2. Call the API to generate (slow, ~10-30s) → storageId.
  *   3. Download the PNG and write it to ./cover.png in the note folder.
- *   4. Set the cover/coverAlt frontmatter. The user publishes as normal;
- *      the existing publish pipeline uploads it (sha256-deduped).
+ *   4. Record the sha256 → storageId mapping in the note's `valeon.media`
+ *      block and set the cover frontmatter. Recording the mapping is what
+ *      lets the publish pipeline reuse the already-stored blob instead of
+ *      re-uploading it (which would orphan a duplicate in Convex storage).
  */
 export async function runGenerateCover(args: {
 	app: App;
@@ -54,12 +57,19 @@ export async function runGenerateCover(args: {
 	const coverPath = `${folderPath}/cover.png`;
 	await app.vault.adapter.writeBinary(coverPath, bytes);
 
+	// Hash the exact bytes we just stored so publish can match them. The
+	// blob is already in Convex storage under `storageId`; recording
+	// sha256 → storageId in `valeon.media` lets publish's ensureUploaded
+	// reuse it directly instead of re-uploading (which orphans a duplicate).
+	const hash = await sha256Hex(bytes);
+
 	// Re-read in case the note changed during the slow generation, then
-	// set the cover frontmatter and write back. coverAlt is intentionally
-	// left for the author: auto-filling it from the prompt produces
-	// inaccurate alt text that silently looks finished.
+	// set the cover frontmatter + media mapping and write back. coverAlt is
+	// intentionally left for the author: auto-filling it from the prompt
+	// produces inaccurate alt text that silently looks finished.
 	const note = parseNote(await app.vault.read(file));
 	note.frontmatter.cover = "./cover.png";
+	note.valeon.media = { ...(note.valeon.media ?? {}), [hash]: storageId };
 	await app.vault.modify(
 		file,
 		stringifyNote(note.frontmatter, note.valeon, note.body),
