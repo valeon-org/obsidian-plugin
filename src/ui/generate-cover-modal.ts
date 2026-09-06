@@ -1,49 +1,42 @@
 import { type App, Modal, Notice, Setting } from "obsidian";
-import type { CoverStyleMeta } from "../api/types";
+import type { AxisCatalog, Coordinate, PresetMeta } from "../api/types";
 
-export type GenerateCoverResult = {
-	prompt: string;
-	styleCode: string;
-	variantId?: string;
-	hue?: string;
+export type GenerateCoverResult = Coordinate & {
+	subject: string;
+	presetId?: string;
 };
 
 /*
- * Modal for the "Generate cover with AI" command. Mirrors the dashboard's
- * picker: a subject box, a style dropdown, and a conditional sub-control
- * (variant for multi-variant styles, hue for V07). Resolves the selection
- * via the onResolve callback (null on cancel).
+ * Modal for the "Generate cover with AI" command.
+ *
+ * A cover is a coordinate in four axes rather than a named style, so all
+ * four dropdowns are always present — the old conditional sub-control
+ * (variant for some styles, hue for one) has no equivalent here, and
+ * with it goes the divergence where this modal used `else if` while the
+ * dashboard rendered both.
+ *
+ * The modal opens on a coordinate the server proposed, avoiding the
+ * publication's recent covers. Presets set all four axes at once for an
+ * author who wants one of the old looks back.
  */
 export class GenerateCoverModal extends Modal {
 	private resolved = false;
-	private prompt: string;
-	private styleCode: string;
-	private variantId = "";
-	private hue = "";
-	private helperEl: HTMLElement | null = null;
-	private subControlEl: HTMLElement | null = null;
+	private subject: string;
+	private coordinate: Coordinate;
+	private presetId = "";
+	private axisRowsEl: HTMLElement | null = null;
 
 	constructor(
 		app: App,
-		private readonly styles: CoverStyleMeta[],
+		private readonly axes: AxisCatalog,
+		private readonly presets: PresetMeta[],
 		defaultSubject: string,
+		proposed: Coordinate,
 		private readonly onResolve: (result: GenerateCoverResult | null) => void,
 	) {
 		super(app);
-		this.prompt = defaultSubject;
-		this.styleCode = styles[0]?.code ?? "";
-		this.syncSubDefaults();
-	}
-
-	private selectedStyle(): CoverStyleMeta | undefined {
-		return this.styles.find((s) => s.code === this.styleCode);
-	}
-
-	/** Reset variant/hue to the first option of the current style. */
-	private syncSubDefaults() {
-		const style = this.selectedStyle();
-		this.variantId = style?.variants[0]?.id ?? "";
-		this.hue = style?.hues[0]?.id ?? "";
+		this.subject = defaultSubject;
+		this.coordinate = { ...proposed };
 	}
 
 	onOpen() {
@@ -51,42 +44,48 @@ export class GenerateCoverModal extends Modal {
 		contentEl.empty();
 		contentEl.createEl("h2", { text: "Generate cover image" });
 		contentEl.createEl("p", {
-			text: 'Describe the subject; the chosen style governs the look. "No text" is enforced automatically.',
+			text: 'Describe the subject. The four axes govern only how it is drawn — they never add objects of their own. "No text" is enforced automatically.',
 			cls: "setting-item-description",
 		});
 
 		new Setting(contentEl)
 			.setName("Subject")
-			.setDesc("What the cover should depict.")
+			.setDesc("What the cover is about, in a sentence.")
 			.addTextArea((ta) => {
-				ta.setValue(this.prompt);
+				ta.setValue(this.subject);
 				ta.onChange((v) => {
-					this.prompt = v;
+					this.subject = v;
 				});
 				ta.inputEl.rows = 3;
 				ta.inputEl.addClass("valeon-full-width");
 			});
 
-		new Setting(contentEl).setName("Style").addDropdown((dd) => {
-			for (const s of this.styles) {
-				dd.addOption(s.code, `${s.code} · ${s.name}`);
-			}
-			dd.setValue(this.styleCode);
-			dd.onChange((v) => {
-				this.styleCode = v;
-				this.syncSubDefaults();
-				this.renderHelper();
-				this.renderSubControl();
-			});
-		});
-
-		this.helperEl = contentEl.createEl("p", {
+		contentEl.createEl("p", {
+			text: "Proposed for you, avoiding recent covers.",
 			cls: "setting-item-description",
 		});
-		this.renderHelper();
 
-		this.subControlEl = contentEl.createDiv();
-		this.renderSubControl();
+		this.axisRowsEl = contentEl.createDiv();
+		this.renderAxisRows();
+
+		if (this.presets.length > 0) {
+			new Setting(contentEl)
+				.setName("Or start from a preset")
+				.setDesc("Sets all four axes at once.")
+				.addDropdown((dd) => {
+					dd.addOption("", "None — use the axes above");
+					for (const p of this.presets) dd.addOption(p.id, p.name);
+					dd.setValue(this.presetId);
+					dd.onChange((id) => {
+						this.presetId = id;
+						const preset = this.presets.find((p) => p.id === id);
+						if (preset) {
+							this.coordinate = { ...preset.coordinate };
+							this.renderAxisRows();
+						}
+					});
+				});
+		}
 
 		const row = contentEl.createDiv({ cls: "valeon-modal-button-row" });
 		const cancel = row.createEl("button", { text: "Cancel" });
@@ -96,33 +95,30 @@ export class GenerateCoverModal extends Modal {
 		ok.addEventListener("click", () => this.commit());
 	}
 
-	private renderHelper() {
-		if (!this.helperEl) return;
-		const style = this.selectedStyle();
-		this.helperEl.setText(
-			style ? `${style.register} · ${style.primaryUse}` : "",
-		);
-	}
-
-	private renderSubControl() {
-		if (!this.subControlEl) return;
-		this.subControlEl.empty();
-		const style = this.selectedStyle();
-		if (!style) return;
-		if (style.variants.length > 0) {
-			new Setting(this.subControlEl).setName("Variant").addDropdown((dd) => {
-				for (const v of style.variants) dd.addOption(v.id, v.name);
-				dd.setValue(this.variantId);
-				dd.onChange((val) => {
-					this.variantId = val;
-				});
-			});
-		} else if (style.hues.length > 0) {
-			new Setting(this.subControlEl).setName("Hue").addDropdown((dd) => {
-				for (const h of style.hues) dd.addOption(h.id, h.name);
-				dd.setValue(this.hue);
-				dd.onChange((val) => {
-					this.hue = val;
+	/** Re-rendered wholesale when a preset changes all four at once. */
+	private renderAxisRows() {
+		if (!this.axisRowsEl) return;
+		this.axisRowsEl.empty();
+		const rows: { key: keyof Coordinate; label: string }[] = [
+			{ key: "palette", label: "Palette" },
+			{ key: "technique", label: "Technique" },
+			{ key: "composition", label: "Composition" },
+			{ key: "treatment", label: "Treatment" },
+		];
+		const options: Record<keyof Coordinate, { id: string; name: string }[]> = {
+			palette: this.axes.palettes,
+			technique: this.axes.techniques,
+			composition: this.axes.compositions,
+			treatment: this.axes.treatments,
+		};
+		for (const { key, label } of rows) {
+			new Setting(this.axisRowsEl).setName(label).addDropdown((dd) => {
+				for (const o of options[key]) dd.addOption(o.id, o.name);
+				dd.setValue(this.coordinate[key]);
+				dd.onChange((value) => {
+					this.coordinate[key] = value;
+					// Editing an axis breaks the preset, so stop claiming one.
+					this.presetId = "";
 				});
 			});
 		}
@@ -130,19 +126,23 @@ export class GenerateCoverModal extends Modal {
 
 	private commit() {
 		if (this.resolved) return;
-		const prompt = this.prompt.trim();
-		if (!prompt || !this.styleCode) {
-			new Notice("Valeon: subject and style are required.");
+		const subject = this.subject.trim();
+		if (!subject) {
+			new Notice("Valeon: a subject is required.");
 			return;
 		}
-		const style = this.selectedStyle();
+		const missing = (
+			["palette", "technique", "composition", "treatment"] as const
+		).filter((key) => !this.coordinate[key]);
+		if (missing.length > 0) {
+			new Notice(`Valeon: choose a ${missing[0]}.`);
+			return;
+		}
 		this.resolved = true;
 		this.onResolve({
-			prompt,
-			styleCode: this.styleCode,
-			variantId:
-				style && style.variants.length > 0 ? this.variantId : undefined,
-			hue: style && style.hues.length > 0 ? this.hue : undefined,
+			subject,
+			...this.coordinate,
+			presetId: this.presetId || undefined,
 		});
 		this.close();
 	}

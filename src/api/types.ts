@@ -168,20 +168,71 @@ export type ResolveRefsResponse = {
 	targets: Array<ReferenceTarget | null>;
 };
 
-// AI cover image generation. Mirrors coverImageStyles.coverStyleCatalog()
-// and the /api/obsidian/covers/* routes in valeon-blog/convex/http.ts.
-export type CoverStyleMeta = {
-	code: string;
-	name: string;
-	register: string;
-	primaryUse: string;
-	variants: Array<{ id: string; name: string; hint: string }>;
-	hues: Array<{ id: string; name: string }>;
+// AI cover image generation. Mirrors the /api/obsidian/covers/* routes
+// in valeon-blog/convex/http.ts.
+//
+// These types are hand-maintained on purpose. This repository is public,
+// so it carries the minimal subset of Valeon's contract that the plugin
+// actually needs rather than importing the server's own definitions. The
+// prompt fragments each axis id resolves to never cross this boundary —
+// only the ids and their display labels do.
+//
+// A cover is a coordinate in four independent axes rather than a named
+// style: two posts sharing a style used to differ only in their props.
+
+export type AxisOption = { id: string; name: string };
+
+export type AxisCatalog = {
+	palettes: AxisOption[];
+	techniques: AxisOption[];
+	compositions: AxisOption[];
+	treatments: AxisOption[];
 };
 
-export type CoverStylesResponse = { styles: CoverStyleMeta[] };
+export type Coordinate = {
+	palette: string;
+	technique: string;
+	composition: string;
+	treatment: string;
+};
+
+export type PresetMeta = {
+	id: string;
+	name: string;
+	note: string;
+	coordinate: Coordinate;
+};
+
+export type CoverAxesResponse = { axes: AxisCatalog; presets: PresetMeta[] };
 
 export type GenerateCoverResponse = { storageId: string };
+
+/**
+ * Validate a catalogue payload at the boundary.
+ *
+ * The backend deploys with the blog, so an installed plugin build can
+ * meet a newer API than it was written against. There is no
+ * compatibility shim by design — this turns that mismatch into a message
+ * telling the author to update, instead of a picker that renders empty
+ * and looks broken for no stated reason.
+ */
+export function parseCoverAxes(raw: unknown): CoverAxesResponse {
+	const value = raw as Partial<CoverAxesResponse> | null;
+	const axes = value?.axes;
+	const wellFormed =
+		!!axes &&
+		Array.isArray(axes.palettes) &&
+		Array.isArray(axes.techniques) &&
+		Array.isArray(axes.compositions) &&
+		Array.isArray(axes.treatments) &&
+		Array.isArray(value?.presets);
+	if (!wellFormed) {
+		throw new Error(
+			"Valeon: unrecognised cover style catalogue. Update the plugin to match the site.",
+		);
+	}
+	return value as CoverAxesResponse;
+}
 
 // AI authoring suggestions (OpenAI-backed). Both pre-fill editable
 // frontmatter; the author reviews before publishing.

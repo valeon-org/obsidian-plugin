@@ -33,8 +33,11 @@ export async function runGenerateCover(args: {
 		return;
 	}
 
-	const { styles } = await api.listCoverStyles();
-	if (styles.length === 0) {
+	// Throws with an "update the plugin" message if the catalogue shape is
+	// unrecognised — the backend ships with the blog, so an installed
+	// build can meet a newer API and there is no compatibility shim.
+	const { axes, presets } = await api.listCoverAxes();
+	if (axes.palettes.length === 0) {
 		new Notice("Valeon: no cover styles available.");
 		return;
 	}
@@ -43,8 +46,22 @@ export async function runGenerateCover(args: {
 	const defaultSubject =
 		parsed.frontmatter.excerpt || parsed.frontmatter.title || "";
 
+	// Seed on the folder name (the dated slug), so the proposal for a
+	// given post is the same each time it is opened, while different
+	// posts diverge. Selection happens server-side, where the recency
+	// history lives.
+	const seed = file.parent?.name || file.basename;
+	const proposed = await api.proposeCoverCoordinate(seed);
+
 	const choice = await new Promise<GenerateCoverResult | null>((resolve) => {
-		new GenerateCoverModal(app, styles, defaultSubject, resolve).open();
+		new GenerateCoverModal(
+			app,
+			axes,
+			presets,
+			defaultSubject,
+			proposed,
+			resolve,
+		).open();
 	});
 	if (!choice) return;
 

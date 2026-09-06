@@ -1,7 +1,8 @@
 import { requestUrl } from "obsidian";
 import type {
 	ApiError,
-	CoverStylesResponse,
+	Coordinate,
+	CoverAxesResponse,
 	FetchResponse,
 	FinalizeResponse,
 	GenerateCoverResponse,
@@ -19,6 +20,7 @@ import type {
 	UploadUrlResponse,
 	Whoami,
 } from "./types";
+import { parseCoverAxes } from "./types";
 
 /*
  * Thin HTTP client for the Valeon Obsidian endpoints. Uses Obsidian's
@@ -144,9 +146,27 @@ export class ValeonApi {
 		);
 	}
 
-	/** Fetch the AI cover style catalog (labels + option ids only). */
-	listCoverStyles() {
-		return this.request<CoverStylesResponse>("/api/obsidian/covers/styles");
+	/**
+	 * Fetch the cover axis catalogue (labels and option ids only — never
+	 * the prompt fragments). Validated at the boundary so a stale plugin
+	 * meeting a newer API fails with a message rather than an empty
+	 * picker.
+	 */
+	async listCoverAxes(): Promise<CoverAxesResponse> {
+		const raw = await this.request<unknown>("/api/obsidian/covers/styles");
+		return parseCoverAxes(raw);
+	}
+
+	/**
+	 * Ask the server for a coordinate for this note, avoiding what the
+	 * publication has used lately. Selection lives server-side so the
+	 * plugin and dashboard cannot drift apart on it.
+	 */
+	proposeCoverCoordinate(seed: string, preferTreatments?: string[]) {
+		return this.request<Coordinate>("/api/obsidian/covers/propose", {
+			seed,
+			preferTreatments,
+		});
 	}
 
 	/**
@@ -155,10 +175,12 @@ export class ValeonApi {
 	 * (~10-30s) call — the OpenAI image request runs synchronously.
 	 */
 	generateCover(args: {
-		prompt: string;
-		styleCode: string;
-		variantId?: string;
-		hue?: string;
+		subject: string;
+		palette: string;
+		technique: string;
+		composition: string;
+		treatment: string;
+		presetId?: string;
 	}) {
 		return this.request<GenerateCoverResponse>(
 			"/api/obsidian/covers/generate",
