@@ -14,15 +14,20 @@ via the web dashboard or with this plugin.
 Open Obsidian → Settings → **Community plugins** → Browse → search for
 "Valeon" → Install → Enable.
 
+Requires Obsidian **1.11.4** or newer, the release that added secret
+storage, which the plugin keeps your API token in.
+
 ## Setup
 
 1. Sign in to the [Valeon author dashboard](https://author.valeon.blog) and
    open **Settings → API Keys**. Create a new token and name it for the
    device (e.g. "iPhone Obsidian"). Copy the token — it is only shown once.
    You can revoke this token at any time from the same page.
-2. In Obsidian, open **Settings → Valeon publishing** and paste the value
-   into the **API token** field. That's the only setting authors configure —
-   the plugin always talks to the production Valeon backend.
+2. In Obsidian, open **Settings → Valeon**. The **API token** setting is a
+   secret picker: create a new secret (for example `valeon-api-token`),
+   paste the token as its value, and select it. That's the only setting
+   authors configure — the plugin always talks to the production Valeon
+   backend.
 3. Click **Test connection** to verify.
 4. Run **`Valeon: Sync template from server`** once. This downloads the
    current schema and writes `_templates/post.frontmatter.template.md` —
@@ -30,6 +35,13 @@ Open Obsidian → Settings → **Community plugins** → Browse → search for
    frontmatter of new posts. Without this step, `Valeon: New post` will
    prompt you to run it; doing it up front avoids the interruption. Re-run
    the command any time the server's schema changes.
+
+**The token is stored per device.** It lives in Obsidian's secret storage,
+not in your vault (the plugin's `data.json` only records the secret's
+name), so syncing the vault doesn't carry it. Repeat steps 1–3 on each
+device you write on. If you used the plugin before 1.8.0, it moved your
+existing token into secret storage automatically on first launch and showed
+a notice saying so.
 
 ## Folder structure
 
@@ -101,7 +113,7 @@ post files without a `valeon.postId` in their frontmatter, run a one-time
 backfill so the plugin can match them to their remote counterparts:
 
 ```text
-1. Settings → paste token, click Test connection.
+1. Settings → choose your API token secret, click Test connection.
 2. Run "Valeon: Sync template from server" once.
 3. Run "Valeon: Reconcile vault (preview)".
 4. Open the latest file in _reports/ — verify the matches look right.
@@ -229,6 +241,24 @@ title). Generation doesn't fill in `coverAlt` — write your own, or run
 **`Valeon: Suggest cover alt text with AI`** for an editable suggestion drawn
 from a vision pass over the rendered image. It then publishes like any other
 cover.
+
+**Light and dark figures:** a figure can follow the reader's theme. Link the
+version drawn for light pages as usual, and put the dark-page version next to
+it with `.on-dark.svg` in place of `.svg`:
+
+```text
+![Order flow at the open](./assets/figure-1.svg)
+
+assets/
+├── figure-1.svg           ← light pages, RSS, link previews
+└── figure-1.on-dark.svg   ← dark pages
+```
+
+Only link the plain file. On publish the plugin finds the twin by name,
+lints and uploads it, and sends the pairing so the blog can show whichever
+one matches the reader's theme, with one caption. Pull and restore write the
+twin back next to its plain file. This applies to SVG figures on their own
+line; images inside a sentence or a link are left as they are.
 
 **What the plugin does on publish:**
 
