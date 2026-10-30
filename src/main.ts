@@ -25,6 +25,7 @@ import { runSyncTemplate } from "./commands/sync-template";
 import { runSyncVault } from "./commands/sync-vault";
 import { parseNote } from "./lib/frontmatter";
 import { sha256Hex } from "./lib/sha256";
+import { migrateLegacyToken, readToken } from "./lib/token-secret";
 import {
 	DEFAULT_SETTINGS,
 	type ValeonSettings,
@@ -77,6 +78,33 @@ export default class ValeonPlugin extends Plugin {
 		const data = ((await this.loadData()) ?? {}) as Partial<PersistedData>;
 		this.settings = { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) };
 		this.cache = new SchemaCache(data.cache ?? null);
+		await this.migrateToken();
+	}
+
+	/**
+	 * Move a pre-1.8.0 plaintext token out of data.json into Obsidian's
+	 * secret storage. If that fails, the plaintext token stays and keeps
+	 * working, and the next load tries again.
+	 */
+	private async migrateToken() {
+		try {
+			const migrated = migrateLegacyToken(
+				this.settings,
+				this.app.secretStorage,
+			);
+			if (!migrated) return;
+			this.settings = migrated;
+			await this.saveSettings();
+			new Notice(
+				`Valeon: your API token moved to Obsidian's secret storage as "${migrated.apiTokenSecret}". It is no longer stored in your vault, so on other devices set it once in Valeon settings.`,
+				15000,
+			);
+		} catch (err) {
+			new Notice(
+				`Valeon: couldn't move the API token to secret storage (${err instanceof Error ? err.message : String(err)}). It keeps working from settings for now.`,
+				15000,
+			);
+		}
 	}
 
 	async saveSettings() {
@@ -94,13 +122,16 @@ export default class ValeonPlugin extends Plugin {
 	}
 
 	getApi(): ValeonApi {
-		if (!this.settings.apiToken) {
-			throw new Error("Set the API token in Valeon settings.");
+		// The plaintext token is only ever present if migration failed.
+		const token =
+			readToken(this.settings, this.app.secretStorage) ??
+			(this.settings.apiToken?.trim() || null);
+		if (!token) {
+			throw new Error(
+				"Choose your API token in Valeon settings (it is stored per device).",
+			);
 		}
-		return new ValeonApi({
-			baseUrl: __VALEON_API_BASE_URL__,
-			token: this.settings.apiToken,
-		});
+		return new ValeonApi({ baseUrl: __VALEON_API_BASE_URL__, token });
 	}
 
 	private registerCommands() {

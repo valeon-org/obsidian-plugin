@@ -2,22 +2,22 @@ import {
 	type App,
 	Notice,
 	PluginSettingTab,
+	SecretComponent,
 	Setting,
 	type SettingDefinitionItem,
 } from "obsidian";
+import type { TokenSettings } from "./lib/token-secret";
 import type ValeonPlugin from "./main";
 
-export type ValeonSettings = {
-	apiToken: string;
-};
+export type ValeonSettings = TokenSettings;
 
 export const DEFAULT_SETTINGS: ValeonSettings = {
-	apiToken: "",
+	apiTokenSecret: "",
 };
 
 const TOKEN_NAME = "API token";
 const TOKEN_DESC =
-	"Paste once — only the prefix is displayed afterwards. Create one at /settings/api-keys on the dashboard.";
+	"Pick or create the secret that holds your API token. Create a token at /settings/api-keys on the dashboard. Secrets live in Obsidian's secret storage on this device, not in your vault.";
 const TEST_NAME = "Test connection";
 const TEST_DESC = "Calls /whoami to verify the token works.";
 
@@ -31,8 +31,9 @@ export class ValeonSettingTab extends PluginSettingTab {
 
 	/**
 	 * Declarative settings (Obsidian 1.13+), so the rows show up in
-	 * settings search. Both rows render imperatively: the token input
-	 * must stay a password field, which no declarative control offers.
+	 * settings search. Both rows render imperatively: the token is a
+	 * SecretComponent and the test is a button, neither of which has a
+	 * declarative control.
 	 */
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return [
@@ -43,7 +44,7 @@ export class ValeonSettingTab extends PluginSettingTab {
 					{
 						name: TOKEN_NAME,
 						desc: TOKEN_DESC,
-						aliases: ["token", "key", "api key"],
+						aliases: ["token", "key", "api key", "secret"],
 						render: (setting) => this.tokenInput(setting),
 					},
 					{
@@ -57,7 +58,7 @@ export class ValeonSettingTab extends PluginSettingTab {
 		];
 	}
 
-	/** Fallback for Obsidian before 1.13, which has no declarative settings. */
+	/** Fallback for Obsidian 1.11.4–1.12, which has no declarative settings. */
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -71,18 +72,14 @@ export class ValeonSettingTab extends PluginSettingTab {
 	}
 
 	private tokenInput(setting: Setting): void {
-		setting.addText((t) => {
-			t.setPlaceholder("vln_...");
-			const current = this.plugin.settings.apiToken;
-			if (current) {
-				t.inputEl.type = "password";
-				t.setValue(current);
-			}
-			t.onChange(async (v) => {
-				this.plugin.settings.apiToken = v.trim();
-				await this.plugin.saveSettings();
-			});
-		});
+		setting.addComponent((el) =>
+			new SecretComponent(this.app, el)
+				.setValue(this.plugin.settings.apiTokenSecret)
+				.onChange(async (name) => {
+					this.plugin.settings.apiTokenSecret = name;
+					await this.plugin.saveSettings();
+				}),
+		);
 	}
 
 	private testButton(setting: Setting): void {
