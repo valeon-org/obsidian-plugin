@@ -6,6 +6,8 @@ import { detectConflict } from "../lib/conflict";
 import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
+import { twinOnlyStorageIds } from "../lib/on-dark-twins";
+import { writeOnDarkTwins } from "../lib/pull-twins";
 import { sha256Hex } from "../lib/sha256";
 import { type ConflictChoice, ConflictModal } from "../ui/conflict-modal";
 
@@ -133,7 +135,11 @@ async function applyPull(
 	// Download any media we don't have locally.
 	const mediaMap: Record<string, string> = { ...(prevValeon.media ?? {}) };
 	const storageToFilename: Record<string, string> = {};
+	// On-dark twins are named from their light file, after this loop.
+	const onDarkTwins = response.onDarkTwins ?? [];
+	const twinOnly = twinOnlyStorageIds(onDarkTwins, source.markdown);
 	for (const ref of response.mediaRefs) {
+		if (twinOnly.has(ref.storageId)) continue;
 		// Dedup: same bytes already on disk → reuse the local path. Avoids
 		// the 1-2 MB cover re-download on every Pull post of an unchanged
 		// post, and keeps the frontmatter cover ref stable.
@@ -165,6 +171,15 @@ async function applyPull(
 		storageToFilename[ref.storageId] = path;
 		if (ref.sha256) mediaMap[ref.sha256] = ref.storageId;
 	}
+
+	await writeOnDarkTwins({
+		app,
+		api,
+		twins: onDarkTwins,
+		mediaRefs: response.mediaRefs,
+		lightPathOf: (storageId) => storageToFilename[storageId],
+		mediaMap,
+	});
 
 	// Rewrite the markdown body. Two passes — assets first
 	// (/m/{storageId} → ./assets/filename), then cross-post refs

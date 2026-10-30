@@ -5,6 +5,7 @@ import { resolveInsideFolder } from "./asset-resolver";
 import { collectLocalAssetPaths } from "./body-rewriter";
 import { collectCrossPostRefs } from "./cross-post-refs";
 import { parseNote } from "./frontmatter";
+import { onDarkTwinPath } from "./on-dark-twins";
 
 /*
  * Lint a parsed note against the cached server schema + taxonomy.
@@ -182,9 +183,16 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 		}
 	}
 
-	// Body asset references — existence + MIME allowed.
+	// Body asset references — existence + MIME allowed. On-dark twins
+	// (`x.on-dark.svg` next to a referenced `x.svg`) are uploaded with
+	// the post, so an existing twin gets the same checks.
 	const allowedMimes = new Set(schema.media.allowedMimeTypes);
-	for (const path of collectLocalAssetPaths(body, folderPath)) {
+	const assetPaths = collectLocalAssetPaths(body, folderPath);
+	for (const path of [...assetPaths]) {
+		const twin = onDarkTwinPath(path);
+		if (twin && (await vault.adapter.exists(twin))) assetPaths.push(twin);
+	}
+	for (const path of assetPaths) {
 		if (!(await vault.adapter.exists(path))) {
 			issues.push({
 				severity: "error",

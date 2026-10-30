@@ -1,3 +1,5 @@
+import type { OnDarkTwin } from "../lib/on-dark-twins";
+
 /*
  * Wire types for the Valeon Obsidian HTTP API. These mirror the
  * structures defined in valeon-blog/convex/obsidian.ts and
@@ -117,6 +119,8 @@ export type FetchResponse = {
 	renderStatus: string;
 	audioStatus: string;
 	coverStorageId?: string;
+	/** On-dark figure twins; absent from servers older than blog v2.36.0. */
+	onDarkTwins?: OnDarkTwin[];
 	mediaRefs: Array<{
 		storageId: string;
 		sha256?: string;

@@ -1,4 +1,5 @@
 import { requestUrl } from "obsidian";
+import type { OnDarkTwin } from "../lib/on-dark-twins";
 import type {
 	ApiError,
 	Coordinate,
@@ -111,6 +112,7 @@ export class ValeonApi {
 		markdown: string;
 		coverStorageId?: string;
 		coverAlt?: string;
+		onDarkTwins: OnDarkTwin[];
 	}) {
 		return this.request<PostMutationResponse>(
 			"/api/obsidian/posts/create",
@@ -125,6 +127,7 @@ export class ValeonApi {
 		markdown: string;
 		coverStorageId?: string;
 		coverAlt?: string;
+		onDarkTwins: OnDarkTwin[];
 	}) {
 		return this.request<PostMutationResponse>(
 			"/api/obsidian/posts/update",

@@ -10,7 +10,8 @@
 		"typecheck": "tsc --noEmit",
 		"format": "biome check --write .",
 		"lint": "biome check .",
-		"lint:obsidian": "eslint src"
+		"lint:obsidian": "eslint src",
+		"test": "bun test"
 	},
 	"keywords": [
 		"obsidian-plugin"
@@ -19,6 +20,7 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "2.4.16",
+		"@types/bun": "^1.4.4",
 		"@types/node": "^25.9.1",
 		"esbuild": "^0.28.0",
 		"eslint": "^10.4.1",

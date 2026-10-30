@@ -5,6 +5,8 @@ import { rewriteForPull } from "../lib/body-rewriter";
 import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
 import { stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
+import { twinOnlyStorageIds } from "../lib/on-dark-twins";
+import { writeOnDarkTwins } from "../lib/pull-twins";
 import { sha256Hex } from "../lib/sha256";
 
 /*
@@ -104,8 +106,12 @@ async function restoreOne(
 	// rewrite the body afterwards.
 	const mediaMap: Record<string, string> = {};
 	const storageToFolderRelPath: Record<string, string> = {};
+	// On-dark twins are named from their light file, after this loop.
+	const onDarkTwins = response.onDarkTwins ?? [];
+	const twinOnly = twinOnlyStorageIds(onDarkTwins, source.markdown);
 
 	for (const ref of response.mediaRefs) {
+		if (twinOnly.has(ref.storageId)) continue;
 		const isCover = response.coverStorageId === ref.storageId;
 		const subdir = isCover ? folderName : `${folderName}/assets`;
 		if (!isCover && !(await app.vault.adapter.exists(subdir))) {
@@ -122,6 +128,18 @@ async function restoreOne(
 		storageToFolderRelPath[ref.storageId] = relPath;
 		if (ref.sha256) mediaMap[ref.sha256] = ref.storageId;
 	}
+
+	await writeOnDarkTwins({
+		app,
+		api,
+		twins: onDarkTwins,
+		mediaRefs: response.mediaRefs,
+		lightPathOf: (storageId) => {
+			const rel = storageToFolderRelPath[storageId];
+			return rel ? `${folderName}/${rel.slice(2)}` : undefined;
+		},
+		mediaMap,
+	});
 
 	// Rewrite the body so /m/{storageId} references point at the local
 	// files we just wrote, and `valeon:post:{id}` URIs become either

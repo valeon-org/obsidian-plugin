@@ -6,6 +6,7 @@ import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
 import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { lintPost, mimeFromExt } from "../lib/lint";
+import { onDarkTwinPath, pairOnDarkTwins } from "../lib/on-dark-twins";
 import { sha256Hex } from "../lib/sha256";
 import { slugFromFolder } from "../lib/slug";
 
@@ -122,9 +123,26 @@ export async function runPublish(args: {
 	}
 
 	// Inline assets.
-	for (const path of collectLocalAssetPaths(parsed.body, folderPath)) {
+	const assetPaths = collectLocalAssetPaths(parsed.body, folderPath);
+	for (const path of assetPaths) {
 		await ensureUploaded(path);
 	}
+
+	// On-dark twins: `./assets/x.on-dark.svg` next to a referenced
+	// `./assets/x.svg`. The body never links it, so upload it here and
+	// send the pairing — the server can't see `valeon.media`.
+	const twinPaths: Array<[string, string]> = [];
+	for (const path of assetPaths) {
+		const twin = onDarkTwinPath(path);
+		if (twin && (await app.vault.adapter.exists(twin))) {
+			await ensureUploaded(twin);
+			twinPaths.push([path, twin]);
+		}
+	}
+	const onDarkTwins = pairOnDarkTwins(
+		twinPaths,
+		(path) => resolverIndex[path]?.storageId,
+	);
 
 	// Rewrite body. Two passes — cross-post refs first (folder paths
 	// and blog URLs → valeon:post:{id} URIs), then assets
@@ -158,6 +176,7 @@ export async function runPublish(args: {
 					markdown: transportBody,
 					coverStorageId,
 					coverAlt: parsed.frontmatter.coverAlt,
+					onDarkTwins,
 				})
 			: await api.createPost({
 					slug,
@@ -165,6 +184,7 @@ export async function runPublish(args: {
 					markdown: transportBody,
 					coverStorageId,
 					coverAlt: parsed.frontmatter.coverAlt,
+					onDarkTwins,
 				});
 
 		// Write back valeon block.
