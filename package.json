@@ -30,5 +30,8 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1"
 	},
-	"dependencies": {}
+	"dependencies": {},
+	"overrides": {
+		"moment": "^2.31.0"
+	}
 }
