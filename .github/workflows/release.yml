@@ -21,9 +21,20 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          # Pinned so `bun audit` and the lockfile behave as they do locally.
+          bun-version: 1.4.4
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      # Obsidian's community review flags dependency advisories, dev-only
+      # ones included, so fail the release here instead of after review.
+      - name: Audit dependencies
+        run: bun audit
+
+      - name: Test
+        run: bun run test
 
       - name: Typecheck
         run: bun run typecheck
