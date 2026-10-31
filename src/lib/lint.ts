@@ -6,6 +6,7 @@ import { collectLocalAssetPaths } from "./body-rewriter";
 import { collectCrossPostRefs } from "./cross-post-refs";
 import { parseNote } from "./frontmatter";
 import { onDarkTwinPath } from "./on-dark-twins";
+import { siblingPostPath } from "./sibling-post-path";
 
 /*
  * Lint a parsed note against the cached server schema + taxonomy.
@@ -228,10 +229,12 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 
 	for (const ref of folderRefs) {
 		if (ref.kind !== "folder") continue;
-		const grandparent = sourceFile?.parent?.parent?.path ?? "";
-		const targetPath = grandparent
-			? `${grandparent}/${ref.folderName}/post.md`
-			: `${ref.folderName}/post.md`;
+		// Same path rule as publish (`cross-post-refs.ts`), so lint can't pass
+		// a link that publish then fails to convert.
+		const targetPath = siblingPostPath(
+			sourceFile?.parent?.parent?.path,
+			ref.folderName,
+		);
 		const exists = await vault.adapter.exists(targetPath);
 		if (!exists) {
 			issues.push({

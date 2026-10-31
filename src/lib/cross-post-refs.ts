@@ -1,6 +1,7 @@
 import { TFile, type Vault } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import { parseNote } from "./frontmatter";
+import { siblingPostPath } from "./sibling-post-path";
 
 /*
  * Cross-post link translation. Lives in its own pass alongside (not
@@ -173,10 +174,7 @@ async function readPostIdFromFolder(
 	// `../{folder}/post.md` resolves relative to the source post's parent
 	// folder. Source is at `<grandparent>/<sourceFolder>/post.md`; target
 	// is at `<grandparent>/<folderName>/post.md`.
-	const grandparent = sourceFile.parent?.parent?.path ?? "";
-	const path = grandparent
-		? `${grandparent}/${folderName}/post.md`
-		: `${folderName}/post.md`;
+	const path = siblingPostPath(sourceFile.parent?.parent?.path, folderName);
 	const f = vault.getAbstractFileByPath(path);
 	if (!f || !(f instanceof TFile)) return null;
 	const raw = await vault.read(f);
