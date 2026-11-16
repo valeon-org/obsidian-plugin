@@ -26,7 +26,12 @@ import { siblingPostPath } from "./sibling-post-path";
  * end-to-end in both directions.
  */
 
-const MARKDOWN_LINK_RE = /(^|[^!])\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
+// `^[` opens an Obsidian inline footnote, not a link. A `^` preceded by an odd
+// number of backslashes is escaped (a literal caret), so `\^[x](y)` IS a link.
+// No lookbehind (unsupported on iOS < 16.4): the escaped form is matched as
+// part of the prefix, anchored by a non-backslash char or the start of input.
+const MARKDOWN_LINK_RE =
+	/(^|[^!^]|(?:^|[^\\])(?:\\\\)*\\\^)\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
 const FOLDER_PATH_RE =
 	/^\.\.\/(\d{4}-\d{2}-\d{2}-[^/]+)\/post\.md(\?[^#)]*)?(#[^)]*)?$/;
 const BLOG_URL_RE =

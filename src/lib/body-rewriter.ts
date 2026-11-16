@@ -16,7 +16,12 @@ import { isExternalUrl, resolveInsideFolder } from "./asset-resolver";
  */
 
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
-const MARKDOWN_LINK_RE = /(^|[^!])\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
+// `^[` opens an Obsidian inline footnote, not a link. A `^` preceded by an odd
+// number of backslashes is escaped (a literal caret), so `\^[x](y)` IS a link.
+// No lookbehind (unsupported on iOS < 16.4): the escaped form is matched as
+// part of the prefix, anchored by a non-backslash char or the start of input.
+const MARKDOWN_LINK_RE =
+	/(^|[^!^]|(?:^|[^\\])(?:\\\\)*\\\^)\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
 const WIKI_IMAGE_RE = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 const WIKI_LINK_RE = /(^|[^!])\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
