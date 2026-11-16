@@ -175,7 +175,7 @@ export class ValeonApi {
 	/**
 	 * Generate an AI cover image. Returns the storageId of the stored PNG;
 	 * the caller downloads it via `downloadMedia`. Note this is a slow
-	 * (~10-30s) call — the OpenAI image request runs synchronously.
+	 * (up to a minute) call — the image request runs synchronously.
 	 */
 	generateCover(args: {
 		subject: string;
@@ -191,7 +191,7 @@ export class ValeonApi {
 		);
 	}
 
-	/** Suggest a post excerpt from its markdown body (OpenAI-backed). */
+	/** Suggest a post excerpt from its markdown body (AI-backed). */
 	suggestExcerpt(markdown: string) {
 		return this.request<SuggestExcerptResponse>(
 			"/api/obsidian/suggest/excerpt",

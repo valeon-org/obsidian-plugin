@@ -13,7 +13,7 @@ import {
  *
  *   1. Fetch the style catalog and open the picker (subject + style +
  *      conditional variant/hue).
- *   2. Call the API to generate (slow, ~10-30s) → storageId.
+ *   2. Call the API to generate (slow, up to a minute) → storageId.
  *   3. Download the PNG and write it to ./cover.png in the note folder.
  *   4. Record the sha256 → storageId mapping in the note's `valeon.media`
  *      block and set the cover frontmatter. Recording the mapping is what
@@ -65,7 +65,7 @@ export async function runGenerateCover(args: {
 	});
 	if (!choice) return;
 
-	new Notice("Valeon: generating cover (10–30s)…");
+	new Notice("Valeon: generating cover (up to a minute)…");
 	const { storageId } = await api.generateCover(choice);
 	const bytes = await api.downloadMedia(storageId);
 

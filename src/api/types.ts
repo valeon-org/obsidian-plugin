@@ -238,7 +238,7 @@ export function parseCoverAxes(raw: unknown): CoverAxesResponse {
 	return value as CoverAxesResponse;
 }
 
-// AI authoring suggestions (OpenAI-backed). Both pre-fill editable
+// AI authoring suggestions (AI-backed). Both pre-fill editable
 // frontmatter; the author reviews before publishing.
 export type SuggestExcerptResponse = { excerpt: string };
 
