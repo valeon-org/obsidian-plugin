@@ -76,7 +76,7 @@ export class ValeonSettingTab extends PluginSettingTab {
 			new SecretComponent(this.app, el)
 				.setValue(this.plugin.settings.apiTokenSecret)
 				.onChange(async (name) => {
-					this.plugin.settings.apiTokenSecret = name;
+					this.plugin.settings.apiTokenSecret = name ?? "";
 					await this.plugin.saveSettings();
 				}),
 		);
