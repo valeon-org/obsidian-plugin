@@ -141,6 +141,9 @@ export type PostMutationResponse = {
 
 export type UploadUrlResponse = { uploadUrl: string };
 
+/** `POST /api/obsidian/media/exists` (blog v2.45.0+): ids absent or not the caller's. */
+export type MissingMediaResponse = { missing: string[] };
+
 export type FinalizeResponse = {
 	mediaId: string;
 	storageId: string;

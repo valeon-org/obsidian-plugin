@@ -6,6 +6,7 @@ import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
 import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { lintPost, mimeFromExt } from "../lib/lint";
+import { resolveStorageIds } from "../lib/media-cache";
 import { onDarkTwinPath, pairOnDarkTwins } from "../lib/on-dark-twins";
 import { sha256Hex } from "../lib/sha256";
 import { slugFromFolder } from "../lib/slug";
@@ -16,8 +17,8 @@ import { slugFromFolder } from "../lib/slug";
  *   1. Parse note (frontmatter + body + valeon meta).
  *   2. Derive slug from folder name.
  *   3. Lint against cached schema/taxonomy. Block on errors.
- *   4. Hash every local asset; upload new ones via API; build
- *      sha256 → storageId map.
+ *   4. Hash every local asset; re-check cached ids with the server
+ *      and upload new or missing ones; build sha256 → storageId map.
  *   5. Rewrite body (transport copy only) to /m/{storageId}.
  *   6. POST create or update.
  *   7. Write returned IDs + canonical metadata back into the
@@ -70,10 +71,83 @@ export async function runPublish(args: {
 		return;
 	}
 
-	// Resolve assets (body + cover).
+	// Resolve assets (body + cover) in three passes: read and hash every
+	// file, resolve each hash to a storageId (re-checking cached ids and
+	// uploading what's uncached or gone), then index by vault path.
 	const valeon = parsed.valeon;
-	const mediaMap: Record<string, string> = { ...(valeon.media ?? {}) };
-	const knownStorageIds = new Set(Object.values(mediaMap));
+
+	// Pass 1: collect the cover, inline-asset and on-dark-twin paths.
+	// Twins: `./assets/x.on-dark.svg` next to a referenced `./assets/x.svg`.
+	// The body never links it, so upload it here and send the pairing —
+	// the server can't see `valeon.media`.
+	const coverPath = parsed.frontmatter.cover
+		? resolveInsideFolder(folderPath, parsed.frontmatter.cover)
+		: null;
+	const assetPaths = collectLocalAssetPaths(parsed.body, folderPath);
+	const twinPaths: Array<[string, string]> = [];
+	for (const path of assetPaths) {
+		const twin = onDarkTwinPath(path);
+		if (twin && (await app.vault.adapter.exists(twin))) {
+			twinPaths.push([path, twin]);
+		}
+	}
+	const paths = new Set([
+		...(coverPath ? [coverPath] : []),
+		...assetPaths,
+		...twinPaths.map(([, twin]) => twin),
+	]);
+
+	type LocalFile = { filename: string; mimeType: string; sha256: string };
+	const files = new Map<string, LocalFile>();
+	const bytesByHash = new Map<
+		string,
+		{ bytes: ArrayBuffer; filename: string; mimeType: string }
+	>();
+	for (const vaultPath of paths) {
+		const bytes = await app.vault.adapter.readBinary(vaultPath);
+		const hash = await sha256Hex(bytes);
+		const filename = vaultPath.split("/").pop() ?? vaultPath;
+		const ext = filename.split(".").pop()?.toLowerCase();
+		const mimeType = mimeFromExt(ext);
+		if (!mimeType) {
+			throw new Error(`Cannot infer MIME type for ${vaultPath}`);
+		}
+		files.set(vaultPath, { filename, mimeType, sha256: hash });
+		if (!bytesByHash.has(hash)) {
+			bytesByHash.set(hash, { bytes, filename, mimeType });
+		}
+	}
+
+	// Pass 2: hash → storageId.
+	const mediaMap = await resolveStorageIds({
+		hashes: [...bytesByHash.keys()],
+		mediaMap: valeon.media ?? {},
+		missing: (ids) =>
+			api
+				.missingMedia(ids, valeon.postId)
+				.then((gone) => (gone ? new Set(gone) : null)),
+		upload: async (hash) => {
+			const file = bytesByHash.get(hash);
+			if (!file) throw new Error(`No local file for media ${hash}`);
+			const { uploadUrl } = await api.uploadUrl();
+			const storageId = await api.uploadBytes(
+				uploadUrl,
+				file.bytes,
+				file.mimeType,
+			);
+			const finalized = await api.finalize({
+				storageId,
+				filename: file.filename,
+				mimeType: file.mimeType,
+				sizeBytes: file.bytes.byteLength,
+				sha256: hash,
+			});
+			// finalize may return a deduped storageId from a prior upload.
+			return finalized.storageId;
+		},
+	});
+
+	// Pass 3: index by vault path.
 	const resolverIndex: Record<
 		string,
 		{
@@ -83,62 +157,13 @@ export async function runPublish(args: {
 			sha256: string;
 		}
 	> = {};
-
-	async function ensureUploaded(vaultPath: string): Promise<string | null> {
-		const bytes = await app.vault.adapter.readBinary(vaultPath);
-		const hash = await sha256Hex(bytes);
-		const filename = vaultPath.split("/").pop() ?? vaultPath;
-		const ext = filename.split(".").pop()?.toLowerCase();
-		const mimeType = mimeFromExt(ext);
-		if (!mimeType) {
-			throw new Error(`Cannot infer MIME type for ${vaultPath}`);
-		}
-		let storageId = mediaMap[hash];
-		if (!storageId) {
-			const { uploadUrl } = await api.uploadUrl();
-			storageId = await api.uploadBytes(uploadUrl, bytes, mimeType);
-			const finalized = await api.finalize({
-				storageId,
-				filename,
-				mimeType,
-				sizeBytes: bytes.byteLength,
-				sha256: hash,
-			});
-			// finalize may return a deduped storageId from a prior upload.
-			storageId = finalized.storageId;
-			mediaMap[hash] = storageId;
-		}
-		knownStorageIds.add(storageId);
-		resolverIndex[vaultPath] = { storageId, filename, mimeType, sha256: hash };
-		return storageId;
+	for (const [vaultPath, file] of files) {
+		const storageId = mediaMap[file.sha256];
+		if (storageId) resolverIndex[vaultPath] = { storageId, ...file };
 	}
-
-	// Cover.
-	let coverStorageId: string | undefined;
-	if (parsed.frontmatter.cover) {
-		const resolved = resolveInsideFolder(folderPath, parsed.frontmatter.cover);
-		if (resolved) {
-			coverStorageId = (await ensureUploaded(resolved)) ?? undefined;
-		}
-	}
-
-	// Inline assets.
-	const assetPaths = collectLocalAssetPaths(parsed.body, folderPath);
-	for (const path of assetPaths) {
-		await ensureUploaded(path);
-	}
-
-	// On-dark twins: `./assets/x.on-dark.svg` next to a referenced
-	// `./assets/x.svg`. The body never links it, so upload it here and
-	// send the pairing — the server can't see `valeon.media`.
-	const twinPaths: Array<[string, string]> = [];
-	for (const path of assetPaths) {
-		const twin = onDarkTwinPath(path);
-		if (twin && (await app.vault.adapter.exists(twin))) {
-			await ensureUploaded(twin);
-			twinPaths.push([path, twin]);
-		}
-	}
+	const coverStorageId = coverPath
+		? resolverIndex[coverPath]?.storageId
+		: undefined;
 	const onDarkTwins = pairOnDarkTwins(
 		twinPaths,
 		(path) => resolverIndex[path]?.storageId,

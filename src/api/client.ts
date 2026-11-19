@@ -9,6 +9,7 @@ import type {
 	GenerateCoverResponse,
 	ListResponse,
 	MatchResponse,
+	MissingMediaResponse,
 	ObsidianFrontmatter,
 	PostMutationResponse,
 	ResolveRefsResponse,
@@ -22,6 +23,9 @@ import type {
 	Whoami,
 } from "./types";
 import { parseCoverAxes } from "./types";
+
+/** The `media/exists` route accepts at most this many ids per call. */
+const MEDIA_EXISTS_MAX = 500;
 
 /*
  * Thin HTTP client for the Valeon Obsidian endpoints. Uses Obsidian's
@@ -250,6 +254,32 @@ export class ValeonApi {
 			/* fall through */
 		}
 		throw new Error("Upload returned no storageId.");
+	}
+
+	/**
+	 * Which of these storageIds the server lacks or doesn't count as the
+	 * caller's. With `postId`, covers already on that post count as
+	 * present. Returns null on 404: an older server without the route
+	 * (the route itself never 404s). Chunked to the route's 500-id cap.
+	 */
+	async missingMedia(
+		storageIds: string[],
+		postId?: string,
+	): Promise<string[] | null> {
+		const missing: string[] = [];
+		for (let i = 0; i < storageIds.length; i += MEDIA_EXISTS_MAX) {
+			try {
+				const res = await this.request<MissingMediaResponse>(
+					"/api/obsidian/media/exists",
+					{ storageIds: storageIds.slice(i, i + MEDIA_EXISTS_MAX), postId },
+				);
+				missing.push(...res.missing);
+			} catch (err) {
+				if (err instanceof ApiError_ && err.status === 404) return null;
+				throw err;
+			}
+		}
+		return missing;
 	}
 
 	/**
