@@ -25,10 +25,17 @@ export async function resolveStorageIds(args: {
 	const { mediaMap, missing, upload } = args;
 	const hashes = [...new Set(args.hashes)];
 
+	// `valeon.media` is frontmatter an author can edit by hand: anything but a
+	// non-empty string counts as uncached and is uploaded again.
+	const cachedId = (hash: string): string | null => {
+		const id: unknown = mediaMap[hash];
+		return typeof id === "string" && id !== "" ? id : null;
+	};
+
 	const cachedIds = [
 		...new Set(
 			hashes.flatMap((hash) => {
-				const id = mediaMap[hash];
+				const id = cachedId(hash);
 				return id ? [id] : [];
 			}),
 		),
@@ -38,7 +45,7 @@ export async function resolveStorageIds(args: {
 
 	const next: Record<string, string> = { ...mediaMap };
 	for (const hash of hashes) {
-		const cached = mediaMap[hash];
+		const cached = cachedId(hash);
 		if (cached && !gone?.has(cached)) continue;
 		next[hash] = await upload(hash);
 	}

@@ -66,6 +66,33 @@ describe("resolveStorageIds", () => {
 		expect(f.uploadCalls).toEqual(["h2"]);
 	});
 
+	test("treats a hand-edited non-string cached value as uncached", async () => {
+		const f = fakes([]);
+		// `valeon.media` is frontmatter the author can edit by hand.
+		const mediaMap = {
+			h1: 42,
+			h2: "",
+			h3: { id: "x" },
+			h4: null,
+			h5: "id5",
+		} as unknown as Record<string, string>;
+		const out = await resolveStorageIds({
+			hashes: ["h1", "h2", "h3", "h4", "h5"],
+			mediaMap,
+			missing: f.missing,
+			upload: f.upload,
+		});
+		expect(f.missingCalls).toEqual([["id5"]]);
+		expect(f.uploadCalls).toEqual(["h1", "h2", "h3", "h4"]);
+		expect(out).toEqual({
+			h1: "new-h1",
+			h2: "new-h2",
+			h3: "new-h3",
+			h4: "new-h4",
+			h5: "id5",
+		});
+	});
+
 	test("skips the check when no hash has a cached id", async () => {
 		const f = fakes([]);
 		const out = await resolveStorageIds({
