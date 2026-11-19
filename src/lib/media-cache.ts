@@ -10,7 +10,7 @@
  * files this publish doesn't touch are harmless, and dropping them would
  * make a re-added file upload again and orphan a blob.
  *
- * Type-only imports here so `bun test` can load the module.
+ * No runtime imports, so `bun test` can load the module (no `obsidian`).
  */
 
 export async function resolveStorageIds(args: {

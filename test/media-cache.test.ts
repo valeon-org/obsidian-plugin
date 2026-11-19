@@ -92,6 +92,19 @@ describe("resolveStorageIds", () => {
 		expect(f.uploadCalls).toEqual([]);
 	});
 
+	test("a null check result still uploads uncached hashes", async () => {
+		const f = fakes(null);
+		const out = await resolveStorageIds({
+			hashes: ["h1", "h2"],
+			mediaMap: { h1: "id1" },
+			missing: f.missing,
+			upload: f.upload,
+		});
+		expect(out).toEqual({ h1: "id1", h2: "new-h2" });
+		expect(f.missingCalls).toEqual([["id1"]]);
+		expect(f.uploadCalls).toEqual(["h2"]);
+	});
+
 	test("propagates a failed check without uploading or touching the map", async () => {
 		const f = fakes([]);
 		const mediaMap = { h1: "id1" };

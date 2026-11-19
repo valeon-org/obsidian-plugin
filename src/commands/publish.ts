@@ -97,15 +97,16 @@ export async function runPublish(args: {
 		...twinPaths.map(([, twin]) => twin),
 	]);
 
+	// Each buffer is dropped after hashing; `upload` reads the file again,
+	// so only files that actually upload are held, one at a time (mobile).
 	type LocalFile = { filename: string; mimeType: string; sha256: string };
 	const files = new Map<string, LocalFile>();
-	const bytesByHash = new Map<
+	const fileByHash = new Map<
 		string,
-		{ bytes: ArrayBuffer; filename: string; mimeType: string }
+		{ path: string; filename: string; mimeType: string }
 	>();
 	for (const vaultPath of paths) {
-		const bytes = await app.vault.adapter.readBinary(vaultPath);
-		const hash = await sha256Hex(bytes);
+		const hash = await sha256Hex(await app.vault.adapter.readBinary(vaultPath));
 		const filename = vaultPath.split("/").pop() ?? vaultPath;
 		const ext = filename.split(".").pop()?.toLowerCase();
 		const mimeType = mimeFromExt(ext);
@@ -113,33 +114,34 @@ export async function runPublish(args: {
 			throw new Error(`Cannot infer MIME type for ${vaultPath}`);
 		}
 		files.set(vaultPath, { filename, mimeType, sha256: hash });
-		if (!bytesByHash.has(hash)) {
-			bytesByHash.set(hash, { bytes, filename, mimeType });
+		if (!fileByHash.has(hash)) {
+			fileByHash.set(hash, { path: vaultPath, filename, mimeType });
 		}
 	}
 
 	// Pass 2: hash → storageId.
 	const mediaMap = await resolveStorageIds({
-		hashes: [...bytesByHash.keys()],
+		hashes: [...fileByHash.keys()],
 		mediaMap: valeon.media ?? {},
 		missing: (ids) =>
 			api
 				.missingMedia(ids, valeon.postId)
 				.then((gone) => (gone ? new Set(gone) : null)),
 		upload: async (hash) => {
-			const file = bytesByHash.get(hash);
+			const file = fileByHash.get(hash);
 			if (!file) throw new Error(`No local file for media ${hash}`);
+			const bytes = await app.vault.adapter.readBinary(file.path);
+			// The sha256 sent to finalize must describe these bytes.
+			if ((await sha256Hex(bytes)) !== hash) {
+				throw new Error(`${file.path} changed during publish; try again.`);
+			}
 			const { uploadUrl } = await api.uploadUrl();
-			const storageId = await api.uploadBytes(
-				uploadUrl,
-				file.bytes,
-				file.mimeType,
-			);
+			const storageId = await api.uploadBytes(uploadUrl, bytes, file.mimeType);
 			const finalized = await api.finalize({
 				storageId,
 				filename: file.filename,
 				mimeType: file.mimeType,
-				sizeBytes: file.bytes.byteLength,
+				sizeBytes: bytes.byteLength,
 				sha256: hash,
 			});
 			// finalize may return a deduped storageId from a prior upload.
