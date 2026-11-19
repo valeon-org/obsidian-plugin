@@ -1,5 +1,6 @@
 import { requestUrl } from "obsidian";
 import type { OnDarkTwin } from "../lib/on-dark-twins";
+import { errorPayload } from "./error-payload";
 import type {
 	ApiError,
 	Coordinate,
@@ -70,13 +71,10 @@ export class ValeonApi {
 			throw: false,
 		});
 		if (res.status >= 400) {
-			let payload: ApiError = { error: `HTTP ${res.status}` };
-			try {
-				payload = res.json as ApiError;
-			} catch {
-				/* ignore non-JSON error body */
-			}
-			throw new ApiError_(res.status, payload);
+			throw new ApiError_(
+				res.status,
+				errorPayload(res.status, () => res.json),
+			);
 		}
 		return res.json as T;
 	}
