@@ -6,7 +6,7 @@ import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
 import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { lintPost, mimeFromExt } from "../lib/lint";
-import { resolveStorageIds } from "../lib/media-cache";
+import { cachedMediaMap, resolveStorageIds } from "../lib/media-cache";
 import { onDarkTwinPath, pairOnDarkTwins } from "../lib/on-dark-twins";
 import { sha256Hex } from "../lib/sha256";
 import { slugFromFolder } from "../lib/slug";
@@ -122,7 +122,7 @@ export async function runPublish(args: {
 	// Pass 2: hash → storageId.
 	const mediaMap = await resolveStorageIds({
 		hashes: [...fileByHash.keys()],
-		mediaMap: valeon.media ?? {},
+		mediaMap: cachedMediaMap(valeon.media),
 		missing: (ids) =>
 			api
 				.missingMedia(ids, valeon.postId)

@@ -6,6 +6,7 @@ import { detectConflict } from "../lib/conflict";
 import { rewriteCrossPostForPull } from "../lib/cross-post-refs";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 import { extFromMime } from "../lib/lint";
+import { cachedMediaMap } from "../lib/media-cache";
 import { twinOnlyStorageIds } from "../lib/on-dark-twins";
 import { writeOnDarkTwins } from "../lib/pull-twins";
 import { sha256Hex } from "../lib/sha256";
@@ -133,7 +134,7 @@ async function applyPull(
 	const localSha256Index = await buildLocalSha256Index(app, folderPath);
 
 	// Download any media we don't have locally.
-	const mediaMap: Record<string, string> = { ...(prevValeon.media ?? {}) };
+	const mediaMap: Record<string, string> = cachedMediaMap(prevValeon.media);
 	const storageToFilename: Record<string, string> = {};
 	// On-dark twins are named from their light file, after this loop.
 	const onDarkTwins = response.onDarkTwins ?? [];

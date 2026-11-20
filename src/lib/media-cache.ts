@@ -13,6 +13,22 @@
  * No runtime imports, so `bun test` can load the module (no `obsidian`).
  */
 
+/**
+ * Reads `valeon.media` as an author may have left it. Frontmatter is
+ * hand-editable, so the value can be a string, list, null or number:
+ * spreading a string would write `{0: "t", 1: "e", …}` back. Anything but a
+ * plain object is an empty map; inside a map only non-empty string ids are
+ * kept (so non-string and empty entries are dropped from what is written back).
+ */
+export function cachedMediaMap(raw: unknown): Record<string, string> {
+	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+	const out: Record<string, string> = {};
+	for (const [hash, id] of Object.entries(raw)) {
+		if (typeof id === "string" && id !== "") out[hash] = id;
+	}
+	return out;
+}
+
 export async function resolveStorageIds(args: {
 	/** Hashes of the files this publish uses (duplicates allowed). */
 	hashes: readonly string[];

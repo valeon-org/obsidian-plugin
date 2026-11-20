@@ -1,6 +1,6 @@
 /// <reference types="bun" />
 import { describe, expect, test } from "bun:test";
-import { resolveStorageIds } from "../src/lib/media-cache";
+import { cachedMediaMap, resolveStorageIds } from "../src/lib/media-cache";
 
 type Fakes = {
 	missingCalls: string[][];
@@ -181,5 +181,34 @@ describe("resolveStorageIds", () => {
 		expect(out).toEqual({ h1: "id1", unused: "idOld" });
 		expect(f.missingCalls).toEqual([["id1"]]);
 		expect(f.uploadCalls).toEqual([]);
+	});
+});
+
+describe("cachedMediaMap", () => {
+	test("a string is not a map", () => {
+		expect(cachedMediaMap("text")).toEqual({});
+	});
+
+	test("an array, null, a number and undefined are not maps", () => {
+		expect(cachedMediaMap(["a"])).toEqual({});
+		expect(cachedMediaMap(null)).toEqual({});
+		expect(cachedMediaMap(undefined)).toEqual({});
+		expect(cachedMediaMap(7)).toEqual({});
+	});
+
+	test("keeps only entries whose value is a non-empty string", () => {
+		expect(cachedMediaMap({ h1: "id", h2: 5, h3: "" })).toEqual({ h1: "id" });
+	});
+
+	test("resolveStorageIds on a non-map uploads every hash and writes no index keys", async () => {
+		const f = fakes([]);
+		const out = await resolveStorageIds({
+			hashes: ["h1", "h2"],
+			mediaMap: cachedMediaMap("text"),
+			missing: f.missing,
+			upload: f.upload,
+		});
+		expect(out).toEqual({ h1: "new-h1", h2: "new-h2" });
+		expect(f.uploadCalls).toEqual(["h1", "h2"]);
 	});
 });

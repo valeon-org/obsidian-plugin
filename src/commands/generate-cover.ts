@@ -1,6 +1,7 @@
 import { type App, Notice, type TFile } from "obsidian";
 import type { ValeonApi } from "../api/client";
 import { parseNote, stringifyNote } from "../lib/frontmatter";
+import { cachedMediaMap } from "../lib/media-cache";
 import { sha256Hex } from "../lib/sha256";
 import {
 	GenerateCoverModal,
@@ -86,7 +87,10 @@ export async function runGenerateCover(args: {
 	// produces inaccurate alt text that silently looks finished.
 	const note = parseNote(await app.vault.read(file));
 	note.frontmatter.cover = "./cover.png";
-	note.valeon.media = { ...(note.valeon.media ?? {}), [hash]: storageId };
+	note.valeon.media = {
+		...cachedMediaMap(note.valeon.media),
+		[hash]: storageId,
+	};
 	await app.vault.modify(
 		file,
 		stringifyNote(note.frontmatter, note.valeon, note.body),
