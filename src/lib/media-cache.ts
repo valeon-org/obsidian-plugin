@@ -22,6 +22,8 @@
  */
 export function cachedMediaMap(raw: unknown): Record<string, string> {
 	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+	const proto: unknown = Object.getPrototypeOf(raw);
+	if (proto !== Object.prototype && proto !== null) return {};
 	const out: Record<string, string> = {};
 	for (const [hash, id] of Object.entries(raw)) {
 		if (typeof id === "string" && id !== "") out[hash] = id;

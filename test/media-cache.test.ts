@@ -196,6 +196,20 @@ describe("cachedMediaMap", () => {
 		expect(cachedMediaMap(7)).toEqual({});
 	});
 
+	test("a Date or a class instance is not a plain object", () => {
+		class Holder {
+			h1 = "id";
+		}
+		expect(cachedMediaMap(new Date())).toEqual({});
+		expect(cachedMediaMap(new Holder())).toEqual({});
+	});
+
+	test("an own __proto__ key does not change the result's prototype", () => {
+		const out = cachedMediaMap(JSON.parse('{"__proto__":"x","h":"i"}'));
+		expect(out).toEqual({ h: "i" });
+		expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
+	});
+
 	test("keeps only entries whose value is a non-empty string", () => {
 		expect(cachedMediaMap({ h1: "id", h2: 5, h3: "" })).toEqual({ h1: "id" });
 	});
