@@ -63,14 +63,19 @@ author: ${author}
 # featured — Optional. Promotes the post on home/collections. Default: false.
 featured: false
 
-# tts — Optional. Enable TTS/podcast generation. Default: true.
+# tts — Optional. Narration (TTS) for editors' posts. Default: true.
+# The editor decides narration for contributors' posts: on theirs, tts and
+# podcast are ignored and a value that differs gets a warning, so
+# contributors can delete both lines.
 tts: true
 
 # podcast — Optional. Include in podcast feed. Forced false if tts=false.
 podcast: true
 
-# aiAssisted — Optional. Uncomment (true) if AI wrote or substantially shaped this
-# post; shown in its Metadata. Deleting the key never clears it — write false.
+# aiAssisted — Optional. Uncomment (true) if AI helped make this post in any
+# way: drafting, research, outlining, editing or figures. Valeon's own
+# suggestion tools don't count. Shown in its Metadata. Deleting the key
+# never clears it — write false.
 # aiAssisted: true
 
 # polemic — Optional. Uncomment (true) if the post argues a case rather than

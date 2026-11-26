@@ -57,7 +57,8 @@ cover: ./cover.png
 coverAlt: ""
 author: ${cache.whoami?.authorSlug ?? "sayed-hamid-fatimi"}
 featured: false
-tts: true
+# The editor decides narration for contributors' posts.
+# tts: true
 # aiAssisted: true
 # polemic: true
 categories:

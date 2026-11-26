@@ -179,6 +179,8 @@ series
 featured
 tts
 podcast
+aiAssisted
+polemic
 categories
 tags
 canonical
