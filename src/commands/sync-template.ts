@@ -73,6 +73,10 @@ podcast: true
 # post; shown in its Metadata. Deleting the key never clears it — write false.
 # aiAssisted: true
 
+# polemic — Optional. Uncomment (true) if the post argues a case rather than
+# reports; shown in its Metadata. Deleting the key never clears it — write false.
+# polemic: true
+
 # categories — Choose one or more from the live list:
 categories:
 ${categoryLines}

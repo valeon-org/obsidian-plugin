@@ -61,3 +61,49 @@ describe("aiAssisted frontmatter key", () => {
 		expect(parseNote("---\na: 1\n---\nb").frontmatter.aiAssisted).toBe(false);
 	});
 });
+
+describe("polemic frontmatter key", () => {
+	test("stringifyNote puts polemic right after aiAssisted", () => {
+		stringifyNote(
+			{
+				title: "T",
+				podcast: true,
+				aiAssisted: true,
+				polemic: true,
+				categories: ["a"],
+			},
+			{},
+			"body",
+		);
+		const keys = Object.keys(stringified as Record<string, unknown>);
+		expect(keys.indexOf("polemic")).toBe(keys.indexOf("aiAssisted") + 1);
+		expect((stringified as Record<string, unknown>).polemic).toBe(true);
+	});
+
+	test("stringifyNote omits polemic when undefined, keeps explicit false", () => {
+		stringifyNote({ title: "T" }, {}, "b");
+		expect(stringified as object).not.toHaveProperty("polemic");
+		stringifyNote({ title: "T", polemic: false }, {}, "b");
+		expect((stringified as Record<string, unknown>).polemic).toBe(false);
+	});
+
+	test("stringifyNote never writes polemicSetBy", () => {
+		stringifyNote(
+			{ title: "T", polemic: true, polemicSetBy: "reviewer" } as never,
+			{},
+			"b",
+		);
+		expect(stringified as object).not.toHaveProperty("polemicSetBy");
+	});
+
+	test("parseNote reads true, false and absent", () => {
+		parsedFixture = { title: "T" };
+		expect(
+			parseNote("---\ntitle: T\n---\nb").frontmatter.polemic,
+		).toBeUndefined();
+		parsedFixture = { polemic: true };
+		expect(parseNote("---\na: 1\n---\nb").frontmatter.polemic).toBe(true);
+		parsedFixture = { polemic: false };
+		expect(parseNote("---\na: 1\n---\nb").frontmatter.polemic).toBe(false);
+	});
+});

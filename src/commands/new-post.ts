@@ -59,6 +59,7 @@ author: ${cache.whoami?.authorSlug ?? "sayed-hamid-fatimi"}
 featured: false
 tts: true
 # aiAssisted: true
+# polemic: true
 categories:
 ${categories.join("\n")}
 tags: []

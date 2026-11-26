@@ -1,6 +1,6 @@
 import { type App, Notice, type TFile } from "obsidian";
 import type { ValeonApi } from "../api/client";
-import type { ObsidianFrontmatter } from "../api/types";
+import type { ObsidianFrontmatter, RemoteFrontmatter } from "../api/types";
 import { parseNote, stringifyNote, type ValeonMeta } from "../lib/frontmatter";
 
 /*
@@ -82,19 +82,36 @@ export async function runPullMetadataVault(args: { app: App; api: ValeonApi }) {
 
 /**
  * Fold server-held metadata into the note's frontmatter without ever
- * clobbering a local value. Currently only `aiAssisted: true` flows
- * down (an editor may have set the label server-side); a local value
- * — including an explicit `false` — is never changed or removed.
+ * clobbering a local value. `aiAssisted: true` and `polemic: true` flow
+ * down when the note lacks the key (an editor may have set the label
+ * server-side); a local value — including an explicit `false` — is never
+ * changed or removed.
+ *
+ * One documented exception: when an editor set `polemic`
+ * (`remote.polemicSetBy === "reviewer"`) the author cannot change it, so
+ * a differing local value is repaired to the server's.
  */
 export function mergeRemoteMetadata(
 	frontmatter: ObsidianFrontmatter,
-	remote: ObsidianFrontmatter | null | undefined,
+	remote: RemoteFrontmatter | null | undefined,
 ): { frontmatter: ObsidianFrontmatter; changes: string[] } {
 	const next: ObsidianFrontmatter = { ...frontmatter };
 	const changes: string[] = [];
 	if (remote?.aiAssisted === true && next.aiAssisted === undefined) {
 		next.aiAssisted = true;
 		changes.push("aiAssisted");
+	}
+	if (remote?.polemic === true && next.polemic === undefined) {
+		next.polemic = true;
+		changes.push("polemic");
+	}
+	if (
+		remote?.polemicSetBy === "reviewer" &&
+		next.polemic !== undefined &&
+		next.polemic !== (remote.polemic === true)
+	) {
+		next.polemic = remote.polemic === true;
+		if (!changes.includes("polemic")) changes.push("polemic");
 	}
 	return { frontmatter: next, changes };
 }

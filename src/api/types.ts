@@ -25,6 +25,8 @@ export type ObsidianFrontmatter = {
 	podcast?: boolean;
 	/** Author-declared AI-assisted label. Send only when the note has the key. */
 	aiAssisted?: boolean;
+	/** Author-declared Polemic label. Send only when the note has the key. */
+	polemic?: boolean;
 	categories?: string[];
 	tags?: string[];
 	canonical?: string;
@@ -85,6 +87,9 @@ export type MatchResult = {
 		tts?: boolean;
 		podcast?: boolean;
 		aiAssisted?: boolean;
+		polemic?: boolean;
+		/** Response-only: who last set the label. Never a note key; never sent. */
+		polemicSetBy?: "author" | "reviewer";
 		publishedAt?: string;
 		updatedAt: string;
 		readingTime?: number;
@@ -99,6 +104,14 @@ export type MatchResult = {
 
 export type MatchResponse = { matches: MatchResult[] };
 
+/**
+ * Frontmatter as the server returns it. `polemicSetBy` is response-only:
+ * the push validator is strict, so it is never a note key and never sent.
+ */
+export type RemoteFrontmatter = ObsidianFrontmatter & {
+	polemicSetBy?: "author" | "reviewer";
+};
+
 export type FetchResponse = {
 	postId: string;
 	slug: string;
@@ -110,11 +123,11 @@ export type FetchResponse = {
 		| "published"
 		| "archived";
 	published: {
-		frontmatter: ObsidianFrontmatter;
+		frontmatter: RemoteFrontmatter;
 		markdown: string;
 	} | null;
 	draftBuffer: {
-		frontmatter: ObsidianFrontmatter;
+		frontmatter: RemoteFrontmatter;
 		markdown: string;
 	} | null;
 	publishedAt?: number;
