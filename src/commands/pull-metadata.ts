@@ -80,6 +80,25 @@ export async function runPullMetadataVault(args: { app: App; api: ValeonApi }) {
 	);
 }
 
+/**
+ * Fold server-held metadata into the note's frontmatter without ever
+ * clobbering a local value. Currently only `aiAssisted: true` flows
+ * down (an editor may have set the label server-side); a local value
+ * — including an explicit `false` — is never changed or removed.
+ */
+export function mergeRemoteMetadata(
+	frontmatter: ObsidianFrontmatter,
+	remote: ObsidianFrontmatter | null | undefined,
+): { frontmatter: ObsidianFrontmatter; changes: string[] } {
+	const next: ObsidianFrontmatter = { ...frontmatter };
+	const changes: string[] = [];
+	if (remote?.aiAssisted === true && next.aiAssisted === undefined) {
+		next.aiAssisted = true;
+		changes.push("aiAssisted");
+	}
+	return { frontmatter: next, changes };
+}
+
 async function pullMetadataInto(
 	parsed: ReturnType<typeof parseNote>,
 	api: ValeonApi,
@@ -87,8 +106,12 @@ async function pullMetadataInto(
 	if (!parsed.valeon.postId) return null;
 	const response = await api.fetchPost(parsed.valeon.postId, "published");
 
-	const changes: string[] = [];
-	const nextFrontmatter: ObsidianFrontmatter = { ...parsed.frontmatter };
+	const merged = mergeRemoteMetadata(
+		parsed.frontmatter,
+		response.published?.frontmatter,
+	);
+	const changes: string[] = [...merged.changes];
+	const nextFrontmatter: ObsidianFrontmatter = merged.frontmatter;
 
 	if (!nextFrontmatter.pubDate && response.publishedAt) {
 		nextFrontmatter.pubDate = new Date(response.publishedAt).toISOString();

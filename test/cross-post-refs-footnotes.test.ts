@@ -6,6 +6,7 @@ import { describe, expect, mock, test } from "bun:test";
 // the pure regex-driven `collectCrossPostRefs`.
 mock.module("obsidian", () => ({
 	TFile: class TFile {},
+	Notice: class Notice {},
 	parseYaml: () => ({}),
 	stringifyYaml: () => "",
 }));

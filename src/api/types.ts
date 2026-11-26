@@ -23,6 +23,8 @@ export type ObsidianFrontmatter = {
 	featured?: boolean;
 	tts?: boolean;
 	podcast?: boolean;
+	/** Author-declared AI-assisted label. Send only when the note has the key. */
+	aiAssisted?: boolean;
 	categories?: string[];
 	tags?: string[];
 	canonical?: string;
@@ -82,6 +84,7 @@ export type MatchResult = {
 		featured: boolean;
 		tts?: boolean;
 		podcast?: boolean;
+		aiAssisted?: boolean;
 		publishedAt?: string;
 		updatedAt: string;
 		readingTime?: number;

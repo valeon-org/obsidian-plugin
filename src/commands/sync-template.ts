@@ -69,6 +69,10 @@ tts: true
 # podcast — Optional. Include in podcast feed. Forced false if tts=false.
 podcast: true
 
+# aiAssisted — Optional. Uncomment (true) if AI wrote or substantially shaped this
+# post; shown in its Metadata. Deleting the key never clears it — write false.
+# aiAssisted: true
+
 # categories — Choose one or more from the live list:
 categories:
 ${categoryLines}

@@ -58,6 +58,7 @@ coverAlt: ""
 author: ${cache.whoami?.authorSlug ?? "sayed-hamid-fatimi"}
 featured: false
 tts: true
+# aiAssisted: true
 categories:
 ${categories.join("\n")}
 tags: []
