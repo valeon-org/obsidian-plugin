@@ -65,12 +65,12 @@ featured: false
 
 # tts — Optional. Narration (TTS) for editors' posts. Default: true.
 # The editor decides narration for contributors' posts: on theirs, tts and
-# podcast are ignored and a value that differs gets a warning, so
-# contributors can delete both lines.
-tts: true
+# podcast are ignored and a value that differs gets a warning, so only
+# editors should uncomment these two lines.
+# tts: true
 
 # podcast — Optional. Include in podcast feed. Forced false if tts=false.
-podcast: true
+# podcast: true
 
 # aiAssisted — Optional. Uncomment (true) if AI helped make this post in any
 # way: drafting, research, outlining, editing or figures. Valeon's own
