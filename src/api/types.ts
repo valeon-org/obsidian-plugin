@@ -103,7 +103,6 @@ export type MatchResult = {
 		featured: boolean;
 		tts?: boolean;
 		podcast?: boolean;
-		voice?: string;
 		aiAssisted?: boolean;
 		polemic?: boolean;
 		/** Response-only: who last set the label. Never a note key; never sent. */
