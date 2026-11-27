@@ -1,7 +1,7 @@
 /// <reference types="bun" />
 import { describe, expect, test } from "bun:test";
 import type { ServerSchema } from "../src/api/types";
-import { voiceLintIssues } from "../src/lib/voiceLint";
+import { voiceLintIssues, withVoiceClear } from "../src/lib/voiceLint";
 
 const base: ServerSchema = {
 	version: 3,
@@ -47,5 +47,20 @@ describe("voiceLintIssues", () => {
 		expect(
 			voiceLintIssues({ voice: "onyx" }, { ...base, voices: null }),
 		).toEqual([]);
+	});
+});
+
+describe("withVoiceClear", () => {
+	test("linked note without voice sends null", () => {
+		expect(withVoiceClear({ title: "T" }, "p1").voice).toBeNull();
+	});
+	test("unlinked note without voice sends nothing", () => {
+		expect(withVoiceClear({ title: "T" }, undefined)).not.toHaveProperty(
+			"voice",
+		);
+	});
+	test("a note with voice sends it, linked or not", () => {
+		expect(withVoiceClear({ voice: "slate" }, "p1").voice).toBe("slate");
+		expect(withVoiceClear({ voice: "slate" }, undefined).voice).toBe("slate");
 	});
 });
