@@ -60,3 +60,38 @@
 .valeon-status--warning {
 	color: var(--text-warning, #f0b72f);
 }
+
+.valeon-voice-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+.valeon-voice-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.valeon-voice-row.is-current {
+	border-color: var(--interactive-accent);
+}
+
+.valeon-voice-main {
+	flex: 1;
+	min-width: 0;
+}
+
+.valeon-voice-name {
+	font-weight: var(--font-semibold);
+}
+
+.valeon-voice-desc,
+.valeon-voice-tags {
+	font-size: var(--font-ui-smaller);
+}

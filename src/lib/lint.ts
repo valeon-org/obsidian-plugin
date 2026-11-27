@@ -7,6 +7,7 @@ import { collectCrossPostRefs } from "./cross-post-refs";
 import { parseNote } from "./frontmatter";
 import { onDarkTwinPath } from "./on-dark-twins";
 import { siblingPostPath } from "./sibling-post-path";
+import { voiceLintIssues } from "./voiceLint";
 
 /*
  * Lint a parsed note against the cached server schema + taxonomy.
@@ -113,6 +114,9 @@ export async function lintPost(input: LintInput): Promise<LintIssue[]> {
 			message: "podcast must be false when tts is false.",
 		});
 	}
+
+	// Narration voice (retired → error, unknown → warning).
+	issues.push(...voiceLintIssues(frontmatter, schema));
 
 	// Canonical URL.
 	if (frontmatter.canonical && !/^https?:\/\//.test(frontmatter.canonical)) {

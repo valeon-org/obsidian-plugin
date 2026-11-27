@@ -5,6 +5,7 @@ declare const __VALEON_API_BASE_URL__: string;
 declare const __VALEON_DASHBOARD_BASE_URL__: string;
 
 import { type PersistedCache, SchemaCache } from "./api/schema-cache";
+import { runChooseVoice } from "./commands/choose-voice";
 import { runGenerateCover } from "./commands/generate-cover";
 import { runLint } from "./commands/lint-post";
 import { runNewPost } from "./commands/new-post";
@@ -267,6 +268,25 @@ export default class ValeonPlugin extends Plugin {
 							file,
 							api: this.getApi(),
 						}).then(() => this.refreshStatus()),
+					);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "choose-narration-voice",
+			name: "Choose narration voice",
+			checkCallback: (checking) => {
+				const file = this.activeMarkdownFile();
+				if (!file) return false;
+				if (!checking) {
+					this.safeRun(() =>
+						runChooseVoice({
+							app: this.app,
+							file,
+							api: this.getApi(),
+						}),
 					);
 				}
 				return true;

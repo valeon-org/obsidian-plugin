@@ -105,3 +105,30 @@ describe("mergeRemoteMetadata polemic", () => {
 		expect(changes).not.toContain("polemic");
 	});
 });
+
+describe("mergeRemoteMetadata voice", () => {
+	test("fills a missing voice from the remote", () => {
+		const { frontmatter, changes } = mergeRemoteMetadata(
+			{ title: "T" },
+			{ title: "T", voice: "slate" },
+		);
+		expect(frontmatter.voice).toBe("slate");
+		expect(changes).toContain("voice");
+	});
+
+	test("a local voice survives a remote with none or a different one", () => {
+		expect(
+			mergeRemoteMetadata({ voice: "slate" }, { title: "T" }).frontmatter.voice,
+		).toBe("slate");
+		const r = mergeRemoteMetadata({ voice: "slate" }, { voice: "basalt" });
+		expect(r.frontmatter.voice).toBe("slate");
+		expect(r.changes).not.toContain("voice");
+	});
+
+	test("never fills from a non-string remote voice", () => {
+		expect(
+			mergeRemoteMetadata({}, { voice: null as unknown as string }).frontmatter
+				.voice,
+		).toBeUndefined();
+	});
+});

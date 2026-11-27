@@ -59,6 +59,7 @@ author: ${cache.whoami?.authorSlug ?? "sayed-hamid-fatimi"}
 featured: false
 # The editor decides narration for contributors' posts.
 # tts: true
+# voice: slate
 # aiAssisted: true
 # polemic: true
 categories:

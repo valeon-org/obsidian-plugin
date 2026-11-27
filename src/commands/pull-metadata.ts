@@ -85,7 +85,10 @@ export async function runPullMetadataVault(args: { app: App; api: ValeonApi }) {
  * clobbering a local value. `aiAssisted: true` and `polemic: true` flow
  * down when the note lacks the key (an editor may have set the label
  * server-side); a local value — including an explicit `false` — is never
- * changed or removed.
+ * changed or removed. A string `voice` fills the same way: without it the
+ * next publish of a note lacking the key would clear an override set in
+ * the dashboard. Removing a voice stays with pull-post / restore, which
+ * replace the frontmatter wholesale.
  *
  * One documented exception: when an editor set `polemic`
  * (`remote.polemicSetBy === "reviewer"`) the author cannot change it, so
@@ -100,6 +103,10 @@ export function mergeRemoteMetadata(
 	if (remote?.aiAssisted === true && next.aiAssisted === undefined) {
 		next.aiAssisted = true;
 		changes.push("aiAssisted");
+	}
+	if (typeof remote?.voice === "string" && next.voice === undefined) {
+		next.voice = remote.voice;
+		changes.push("voice");
 	}
 	if (remote?.polemic === true && next.polemic === undefined) {
 		next.polemic = true;

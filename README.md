@@ -84,10 +84,11 @@ ignored by sync, publish, lint, and reconcile.
 | `Valeon: Suggest excerpt with AI` | Generates an excerpt from the post body and writes it into the `excerpt` frontmatter for you to review and edit. |
 | `Valeon: Suggest cover alt text with AI` | Describes the post's cover image (a vision pass) and writes the result into `coverAlt` for you to review and edit. Requires `cover` to be set. |
 | `Valeon: Suggest tags with AI` | Suggests tags for the current note and merges them into the `tags` frontmatter (as slugs) for you to review and edit before publishing. Prefers your existing tags. |
+| `Valeon: Choose narration voice` | Opens a picker of the narration voices you can use, with a ▶ preview for each, and writes the choice into the `voice:` frontmatter key. "Use my default" removes the key. It applies to the post's next narration only; publishing sends it, and never starts a narration by itself. |
 | `Valeon: Publish` | Lints, uploads new local assets, pushes to the dashboard. First publish creates and publishes; subsequent calls update the draft buffer and republish. |
 | `Valeon: Pull post (published)` | Pulls the live published body + frontmatter into the local note. Downloads any new media into `./assets/`. |
 | `Valeon: Pull post (draft buffer)` | Same, but prefers the draft buffer. |
-| `Valeon: Pull metadata` | Refreshes server-derived fields (`publishedAt`, `readingTime`, `wordCount`, `audioUrl`) in the `valeon:` block. Doesn't touch the body. |
+| `Valeon: Pull metadata` | Refreshes server-derived fields (`publishedAt`, `readingTime`, `wordCount`, `audioUrl`) in the `valeon:` block. Doesn't touch the body. Also fills `aiAssisted`, `polemic` and `voice` when the note lacks the key and the server has a value; it never changes or removes a local value. |
 | `Valeon: Pull metadata (vault)` | Same as above, applied to every linked note in the vault. |
 | `Valeon: Sync vault` | Bulk pull for every linked note where the server's `updatedAt` is newer than the local `valeon.remoteUpdatedAt`. Conflict files get auto-backed up. Report goes to `_reports/`. |
 | `Valeon: Sync template from server` | Refreshes the schema cache and regenerates `_templates/post.frontmatter.template.md`. |
@@ -144,6 +145,14 @@ local state. obsidian-linter's `yaml-key-sort` rule accepts unknown
 keys at the end of frontmatter, so this co-exists with the existing
 ordering convention.
 
+**Narration voice.** An optional `voice: slate` key picks the voice for the
+post's next narration; use `Valeon: Choose narration voice` rather than typing
+it. Omit the key to use your default voice. On a linked note, publishing
+without the key clears any voice previously set for the post (including one set
+in the dashboard, unless `Pull metadata` has filled it in first). `Valeon: Lint
+post` errors on a retired voice (naming its replacement) and warns on an
+unknown one.
+
 ## Recommended companion: Linter plugin
 
 The Valeon plugin ships its own `Valeon: Lint post` command, but it does a
@@ -179,6 +188,7 @@ series
 featured
 tts
 podcast
+voice
 aiAssisted
 polemic
 categories
