@@ -104,7 +104,9 @@ export class VoicePickerModal extends Modal {
 		this.playingId = id;
 		this.setButton(id, "■");
 		void audio.play().catch(() => {
-			this.stopPreview();
+			// A superseded play() rejects with AbortError; only reset if this
+			// preview is still the current one.
+			if (this.playingId === id) this.stopPreview();
 		});
 	}
 

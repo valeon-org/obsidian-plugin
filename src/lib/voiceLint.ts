@@ -1,4 +1,8 @@
-import type { ObsidianFrontmatter, ServerSchema } from "../api/types";
+import type {
+	ObsidianFrontmatter,
+	ServerSchema,
+	WireFrontmatter,
+} from "../api/types";
 import type { LintIssue } from "./lint";
 
 /**
@@ -35,4 +39,18 @@ export function voiceLintIssues(
 		];
 	}
 	return [];
+}
+
+/**
+ * Wire copy of a note's frontmatter. A linked note (it has a `postId`)
+ * without a `voice:` key sends `voice: null`, clearing the post's override
+ * so "no key" means "use my default". A first publish has nothing to clear.
+ */
+export function withVoiceClear(
+	frontmatter: ObsidianFrontmatter,
+	postId: string | undefined,
+): WireFrontmatter {
+	const wire: WireFrontmatter = { ...frontmatter };
+	if (postId && frontmatter.voice === undefined) wire.voice = null;
+	return wire;
 }
