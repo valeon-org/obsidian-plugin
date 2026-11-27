@@ -286,6 +286,8 @@ export default class ValeonPlugin extends Plugin {
 							app: this.app,
 							file,
 							api: this.getApi(),
+							cache: this.cache,
+							save: () => this.saveCache(),
 						}),
 					);
 				}

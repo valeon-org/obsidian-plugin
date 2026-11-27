@@ -2,12 +2,12 @@ import { parseYaml, stringifyYaml } from "obsidian";
 import type { ObsidianFrontmatter } from "../api/types";
 
 /*
- * YAML frontmatter handling that preserves the obsidian-linter key
- * order convention (title, pubDate, updatedDate, excerpt, cover,
- * coverAlt, author, series, featured, tts, podcast, voice, aiAssisted,
- * polemic, categories, tags, canonical) AND keeps the plugin-managed
- * `valeon:` block at the very end. Uses Obsidian's built-in parseYaml / stringifyYaml — pure JS,
- * works on both desktop and mobile.
+ * YAML frontmatter handling that preserves the obsidian-linter key order
+ * convention (title, pubDate, updatedDate, excerpt, cover, coverAlt,
+ * author, series, featured, tts, podcast, voice, aiAssisted, polemic,
+ * categories, tags, canonical) AND keeps the plugin-managed `valeon:`
+ * block at the very end. Uses Obsidian's built-in parseYaml /
+ * stringifyYaml (pure JS, works on desktop and mobile).
  */
 
 export type ValeonMeta = {

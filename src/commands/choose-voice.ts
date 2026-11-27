@@ -1,5 +1,6 @@
 import { type App, Notice, type TFile } from "obsidian";
 import type { ValeonApi } from "../api/client";
+import type { SchemaCache } from "../api/schema-cache";
 import { parseNote, stringifyNote } from "../lib/frontmatter";
 import { VoicePickerModal } from "../ui/voice-picker-modal";
 
@@ -13,8 +14,10 @@ export async function runChooseVoice(args: {
 	app: App;
 	file: TFile;
 	api: ValeonApi;
+	cache: SchemaCache;
+	save: () => Promise<void>;
 }) {
-	const { app, file, api } = args;
+	const { app, file, api, cache, save } = args;
 	const list = await api.listNarrationVoices();
 	if (!list.available) {
 		new Notice("Valeon: Voice list unavailable, try again.");
@@ -23,11 +26,22 @@ export async function runChooseVoice(args: {
 	const current = parseNote(await app.vault.read(file)).frontmatter.voice;
 
 	new VoicePickerModal(app, list, current, (choice) => {
-		void applyVoice(app, file, choice).catch((err: unknown) => {
-			new Notice(
-				`Valeon: couldn't set the voice — ${err instanceof Error ? err.message : String(err)}`,
-			);
-		});
+		void applyVoice(app, file, choice)
+			.then(async () => {
+				// Refresh so lint knows a voice just picked from the live list.
+				// Lint only warns on unknown voices, so a failure is ignored.
+				try {
+					await cache.refresh(api);
+					await save();
+				} catch {
+					/* ignore */
+				}
+			})
+			.catch((err: unknown) => {
+				new Notice(
+					`Valeon: couldn't set the voice — ${err instanceof Error ? err.message : String(err)}`,
+				);
+			});
 	}).open();
 }
 

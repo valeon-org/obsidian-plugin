@@ -1,5 +1,6 @@
-import { type App, Modal } from "obsidian";
+import { type App, Modal, Notice } from "obsidian";
 import type { NarrationVoice, VoiceListResponse } from "../api/types";
+import { defaultRowLabel, previewAriaLabel } from "../lib/voiceLabels";
 
 /*
  * Modal for the "Choose narration voice" command. The first row resets to
@@ -11,6 +12,7 @@ export class VoicePickerModal extends Modal {
 	private audio: HTMLAudioElement | null = null;
 	private playingId: string | null = null;
 	private readonly buttons = new Map<string, HTMLButtonElement>();
+	private readonly names = new Map<string, string>();
 
 	constructor(
 		app: App,
@@ -30,7 +32,6 @@ export class VoicePickerModal extends Modal {
 			cls: "setting-item-description",
 		});
 
-		const defaultVoice = this.list.authorVoice ?? this.list.platformVoice;
 		const listEl = contentEl.createDiv({ cls: "valeon-voice-list" });
 
 		const reset = listEl.createDiv({
@@ -39,7 +40,7 @@ export class VoicePickerModal extends Modal {
 		const resetMain = reset.createDiv({ cls: "valeon-voice-main" });
 		resetMain.createDiv({
 			cls: "valeon-voice-name",
-			text: `Use my default (${defaultVoice})`,
+			text: defaultRowLabel(this.list),
 		});
 		reset
 			.createEl("button", { text: "Select" })
@@ -77,11 +78,12 @@ export class VoicePickerModal extends Modal {
 			const url = voice.previewUrl;
 			const play = row.createEl("button", {
 				text: "▶",
-				attr: { "aria-label": `Preview ${voice.displayName}` },
+				attr: { "aria-label": previewAriaLabel(voice.displayName, false) },
 			});
 			this.buttons.set(voice.id, play);
+			this.names.set(voice.id, voice.displayName);
 			play.addEventListener("click", () => {
-				this.togglePreview(voice.id, url);
+				this.togglePreview(voice, url);
 			});
 		}
 		row
@@ -91,7 +93,8 @@ export class VoicePickerModal extends Modal {
 			});
 	}
 
-	private togglePreview(id: string, url: string) {
+	private togglePreview(voice: NarrationVoice, url: string) {
+		const id = voice.id;
 		const wasPlaying = this.playingId === id;
 		this.stopPreview();
 		if (wasPlaying) return;
@@ -103,24 +106,46 @@ export class VoicePickerModal extends Modal {
 		};
 		this.playingId = id;
 		this.setButton(id, "■");
-		void audio.play().catch(() => {
+		audio.onerror = () => {
+			this.failPreview(id);
+		};
+		void audio.play().catch((err: unknown) => {
 			// A superseded play() rejects with AbortError; only reset if this
 			// preview is still the current one.
-			if (this.playingId === id) this.stopPreview();
+			if (err instanceof DOMException && err.name === "AbortError") {
+				if (this.playingId === id) this.stopPreview();
+				return;
+			}
+			this.failPreview(id);
 		});
+	}
+
+	private failPreview(id: string) {
+		if (this.playingId !== id) return;
+		this.stopPreview();
+		new Notice(
+			`Valeon: Couldn't play the ${this.names.get(id) ?? "voice"} preview.`,
+		);
 	}
 
 	private stopPreview() {
 		if (this.audio) {
 			this.audio.pause();
 			this.audio.onended = null;
+			this.audio.onerror = null;
 		}
 		if (this.playingId) this.setButton(this.playingId, "▶");
 		this.playingId = null;
 	}
 
 	private setButton(id: string, glyph: string) {
-		this.buttons.get(id)?.setText(glyph);
+		const btn = this.buttons.get(id);
+		if (!btn) return;
+		btn.setText(glyph);
+		btn.setAttribute(
+			"aria-label",
+			previewAriaLabel(this.names.get(id) ?? "voice", glyph === "■"),
+		);
 	}
 
 	private choose(voice: string | null) {
@@ -132,6 +157,7 @@ export class VoicePickerModal extends Modal {
 		this.stopPreview();
 		this.audio = null;
 		this.buttons.clear();
+		this.names.clear();
 		this.contentEl.empty();
 	}
 }
