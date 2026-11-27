@@ -4,9 +4,9 @@ import type { ObsidianFrontmatter } from "../api/types";
 /*
  * YAML frontmatter handling that preserves the obsidian-linter key
  * order convention (title, pubDate, updatedDate, excerpt, cover,
- * coverAlt, author, series, featured, tts, podcast, categories, tags,
- * canonical) AND keeps the plugin-managed `valeon:` block at the very
- * end. Uses Obsidian's built-in parseYaml / stringifyYaml — pure JS,
+ * coverAlt, author, series, featured, tts, podcast, voice, aiAssisted,
+ * polemic, categories, tags, canonical) AND keeps the plugin-managed
+ * `valeon:` block at the very end. Uses Obsidian's built-in parseYaml / stringifyYaml — pure JS,
  * works on both desktop and mobile.
  */
 
@@ -49,6 +49,7 @@ const KEY_ORDER = [
 	"featured",
 	"tts",
 	"podcast",
+	"voice",
 	"aiAssisted",
 	"polemic",
 	"categories",
@@ -85,6 +86,7 @@ export function parseNote(raw: string): ParsedNote {
 		featured: boolOr(data.featured),
 		tts: boolOr(data.tts),
 		podcast: boolOr(data.podcast),
+		voice: voiceOr(data.voice),
 		aiAssisted: boolOr(data.aiAssisted),
 		polemic: boolOr(data.polemic),
 		categories: stringArrayOr(data.categories),
@@ -154,6 +156,17 @@ function stringOr(v: unknown): string | undefined {
 	}
 	if (typeof v === "number" && Number.isFinite(v)) return String(v);
 	return undefined;
+}
+
+/**
+ * Strict: strings only (`stringOr` would coerce numbers and Dates), and
+ * trimmed so `voice: ""` reads as absent. Case is never changed — the
+ * server's voice match is case-sensitive.
+ */
+function voiceOr(v: unknown): string | undefined {
+	if (typeof v !== "string") return undefined;
+	const trimmed = v.trim();
+	return trimmed === "" ? undefined : trimmed;
 }
 
 function boolOr(v: unknown): boolean | undefined {

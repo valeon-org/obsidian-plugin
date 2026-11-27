@@ -11,7 +11,6 @@ import type {
 	ListResponse,
 	MatchResponse,
 	MissingMediaResponse,
-	ObsidianFrontmatter,
 	PostMutationResponse,
 	ResolveRefsResponse,
 	ResolveSlugResponse,
@@ -21,9 +20,11 @@ import type {
 	SuggestTagsResponse,
 	Taxonomy,
 	UploadUrlResponse,
+	VoiceListResponse,
 	Whoami,
+	WireFrontmatter,
 } from "./types";
-import { parseCoverAxes } from "./types";
+import { parseCoverAxes, parseVoiceList } from "./types";
 
 /** The `media/exists` route accepts at most this many ids per call. */
 const MEDIA_EXISTS_MAX = 500;
@@ -110,7 +111,7 @@ export class ValeonApi {
 
 	createPost(args: {
 		slug: string;
-		frontmatter: ObsidianFrontmatter;
+		frontmatter: WireFrontmatter;
 		markdown: string;
 		coverStorageId?: string;
 		coverAlt?: string;
@@ -125,7 +126,7 @@ export class ValeonApi {
 	updatePost(args: {
 		postId: string;
 		slug: string;
-		frontmatter: ObsidianFrontmatter;
+		frontmatter: WireFrontmatter;
 		markdown: string;
 		coverStorageId?: string;
 		coverAlt?: string;
@@ -160,6 +161,12 @@ export class ValeonApi {
 	async listCoverAxes(): Promise<CoverAxesResponse> {
 		const raw = await this.request<unknown>("/api/obsidian/covers/styles");
 		return parseCoverAxes(raw);
+	}
+
+	/** The narration voices this author can choose, with their defaults. */
+	async listNarrationVoices(): Promise<VoiceListResponse> {
+		const raw = await this.request<unknown>("/api/obsidian/narration/voices");
+		return parseVoiceList(raw);
 	}
 
 	/**

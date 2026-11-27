@@ -23,6 +23,8 @@ export type ObsidianFrontmatter = {
 	featured?: boolean;
 	tts?: boolean;
 	podcast?: boolean;
+	/** Narration voice id. Absent means "use my default". Never null here. */
+	voice?: string;
 	/** Author-declared AI-assisted label. Send only when the note has the key. */
 	aiAssisted?: boolean;
 	/** Author-declared Polemic label. Send only when the note has the key. */
@@ -30,6 +32,16 @@ export type ObsidianFrontmatter = {
 	categories?: string[];
 	tags?: string[];
 	canonical?: string;
+};
+
+/**
+ * What goes on the wire: the same as the note's frontmatter, except
+ * `voice` may be `null`, which clears the post's override on the server.
+ * Kept apart from `ObsidianFrontmatter` so a `null` can never reach a
+ * note-side object (it would be written as a literal `voice: null`).
+ */
+export type WireFrontmatter = Omit<ObsidianFrontmatter, "voice"> & {
+	voice?: string | null;
 };
 
 export type Whoami = {
@@ -57,6 +69,11 @@ export type ServerSchema = {
 		maxSizeBytes: number;
 		allowedMimeTypes: string[];
 	};
+	/** Schema v3+. `null` while the server has no voice catalogue yet. */
+	voices?: {
+		ids: string[];
+		deprecated: { name: string; replacement: string }[];
+	} | null;
 };
 
 export type Taxonomy = {
@@ -86,6 +103,7 @@ export type MatchResult = {
 		featured: boolean;
 		tts?: boolean;
 		podcast?: boolean;
+		voice?: string;
 		aiAssisted?: boolean;
 		polemic?: boolean;
 		/** Response-only: who last set the label. Never a note key; never sent. */
@@ -255,6 +273,55 @@ export function parseCoverAxes(raw: unknown): CoverAxesResponse {
 		);
 	}
 	return value as CoverAxesResponse;
+}
+
+// Narration voices. Mirrors POST /api/obsidian/narration/voices.
+
+export type VoiceTags = {
+	gender?: string;
+	age?: string;
+	character?: string;
+	accent?: string;
+};
+
+export type NarrationVoice = {
+	id: string;
+	displayName: string;
+	description: string;
+	tags: VoiceTags;
+	previewUrl?: string;
+};
+
+export type VoiceListResponse = {
+	available: boolean;
+	voices: NarrationVoice[];
+	authorVoice: string | null;
+	platformVoice: string;
+};
+
+/** Validate a voice list at the boundary, like `parseCoverAxes`. */
+export function parseVoiceList(raw: unknown): VoiceListResponse {
+	const value = raw as Partial<VoiceListResponse> | null;
+	const wellFormed =
+		!!value &&
+		typeof value === "object" &&
+		typeof value.available === "boolean" &&
+		Array.isArray(value.voices) &&
+		value.voices.every(
+			(v) =>
+				!!v &&
+				typeof v === "object" &&
+				typeof v.id === "string" &&
+				typeof v.displayName === "string",
+		) &&
+		(value.authorVoice === null || typeof value.authorVoice === "string") &&
+		typeof value.platformVoice === "string";
+	if (!wellFormed) {
+		throw new Error(
+			"Valeon: unrecognised narration voice list. Update the plugin to match the site.",
+		);
+	}
+	return value as VoiceListResponse;
 }
 
 // AI authoring suggestions (AI-backed). Both pre-fill editable

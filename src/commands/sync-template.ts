@@ -72,6 +72,9 @@ featured: false
 # podcast — Optional. Include in podcast feed. Forced false if tts=false.
 # podcast: true
 
+# voice — Optional. Omit to use your default voice (Choose narration voice command).
+# voice: slate
+
 # aiAssisted — Optional. Uncomment (true) if AI helped make this post in any
 # way: drafting, research, outlining, editing or figures. Valeon's own
 # suggestion tools don't count. Shown in its Metadata. Deleting the key

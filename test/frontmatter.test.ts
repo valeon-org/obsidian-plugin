@@ -22,12 +22,13 @@ beforeEach(() => {
 });
 
 describe("aiAssisted frontmatter key", () => {
-	test("stringifyNote puts aiAssisted right after podcast", () => {
+	test("stringifyNote puts voice right after podcast, then aiAssisted", () => {
 		stringifyNote(
 			{
 				title: "T",
 				tts: true,
 				podcast: true,
+				voice: "slate",
 				aiAssisted: true,
 				categories: ["a"],
 				tags: [],
@@ -37,8 +38,10 @@ describe("aiAssisted frontmatter key", () => {
 			"body",
 		);
 		const keys = Object.keys(stringified as Record<string, unknown>);
-		expect(keys.indexOf("aiAssisted")).toBe(keys.indexOf("podcast") + 1);
+		expect(keys.indexOf("aiAssisted")).toBe(keys.indexOf("voice") + 1);
 		expect((stringified as Record<string, unknown>).aiAssisted).toBe(true);
+		expect(keys.indexOf("voice")).toBe(keys.indexOf("podcast") + 1);
+		expect((stringified as Record<string, unknown>).voice).toBe("slate");
 	});
 
 	test("stringifyNote omits aiAssisted when undefined, keeps explicit false", () => {
@@ -105,5 +108,22 @@ describe("polemic frontmatter key", () => {
 		expect(parseNote("---\na: 1\n---\nb").frontmatter.polemic).toBe(true);
 		parsedFixture = { polemic: false };
 		expect(parseNote("---\na: 1\n---\nb").frontmatter.polemic).toBe(false);
+	});
+});
+
+describe("voice frontmatter key", () => {
+	test("parseNote keeps a string voice, trimmed", () => {
+		parsedFixture = { voice: " slate " };
+		const raw = "---\nvoice: slate\n---\nbody";
+		expect(parseNote(raw).frontmatter.voice).toBe("slate");
+	});
+
+	test("parseNote drops a boolean, array, number or empty voice", () => {
+		for (const bad of [true, ["slate"], 7, "  "]) {
+			parsedFixture = { voice: bad };
+			expect(
+				parseNote("---\nvoice: x\n---\nb").frontmatter.voice,
+			).toBeUndefined();
+		}
 	});
 });

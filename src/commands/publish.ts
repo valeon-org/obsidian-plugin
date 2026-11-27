@@ -1,6 +1,7 @@
 import { type App, Notice, type TFile } from "obsidian";
 import { ApiError_, type ValeonApi } from "../api/client";
 import type { SchemaCache } from "../api/schema-cache";
+import type { WireFrontmatter } from "../api/types";
 import { resolveInsideFolder } from "../lib/asset-resolver";
 import { collectLocalAssetPaths, rewriteForPush } from "../lib/body-rewriter";
 import { rewriteCrossPostForPush } from "../lib/cross-post-refs";
@@ -190,8 +191,14 @@ export async function runPublish(args: {
 	// Strip `cover` from frontmatter on the wire — the cover is sent
 	// separately as coverStorageId. Strip pubDate/updatedDate (server
 	// owns these). Strip valeon block (it's local-only).
-	const wireFrontmatter = { ...parsed.frontmatter };
+	const wireFrontmatter: WireFrontmatter = { ...parsed.frontmatter };
 	wireFrontmatter.cover = undefined;
+	// A linked note without a `voice:` key clears the post's override on
+	// the server (null), so removing the key means "use my default". A
+	// first publish has nothing to clear.
+	if (valeon.postId && parsed.frontmatter.voice === undefined) {
+		wireFrontmatter.voice = null;
+	}
 
 	// Push.
 	try {
